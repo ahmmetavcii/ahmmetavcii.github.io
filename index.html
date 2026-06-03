@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=5" />
+    <link rel="stylesheet" href="/styles.css?v=6" />
   </head>
   <body>
 
@@ -53,16 +53,14 @@
           <div id="searchSuggestions" class="suggestions-dropdown hidden"></div>
         </div>
         <button id="scanBtn" class="btn-master-analyze" type="button" data-i18n="analyzeBtn">Analyze</button>
-      </div>
 
-      <div class="fusion-slider-container" style="margin: 20px 0; padding: 15px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 500; font-size: 0.9rem;">
-          <span id="sentimentLabel" style="color: var(--accent);">Sentiment (AI): 60%</span>
-          <span id="technicalLabel" style="color: var(--muted);">Technical (Math): 40%</span>
-        </div>
-        <input type="range" id="fusionSlider" min="0" max="100" value="60" style="width: 100%; cursor: pointer; accent-color: var(--accent);">
-        <div style="text-align: center; font-size: 0.75rem; color: var(--muted); margin-top: 8px;">
-          Customize your strategy weight (Day Trader vs Long-Term)
+        <div class="fusion-slider-container">
+          <div class="fusion-slider-header">
+            <span id="sentimentLabel" class="sentiment-label">Sentiment (AI): 60%</span>
+            <span id="technicalLabel" class="technical-label">Technical (Math): 40%</span>
+          </div>
+          <input type="range" id="fusionSlider" min="0" max="100" value="60" aria-label="Strategy weight: Sentiment vs Technical" />
+          <p class="fusion-slider-hint">Customize your strategy weight (Day Trader vs Long-Term)</p>
         </div>
       </div>
 
@@ -171,6 +169,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="/app.js?v=5"></script>
+    <script src="/app.js?v=6"></script>
   </body>
 </html>

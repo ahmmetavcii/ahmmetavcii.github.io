@@ -265,6 +265,11 @@ let suggestionDebounceId = null;
 let suggestionRequestId = 0;
 let suggestionItems = [];
 let activeSuggestionIndex = -1;
+let lastFusionContext = null;
+
+const fusionSlider = document.getElementById("fusionSlider");
+const sentimentLabel = document.getElementById("sentimentLabel");
+const technicalLabel = document.getElementById("technicalLabel");
 
 const CHART_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><polyline points="7 14 11 10 14 13 20 7"/></svg>';
@@ -953,8 +958,44 @@ function technicalMomentumScore(data) {
   return { score, label: t("technicalNeutral"), details: `RSI ${Number.isFinite(rsi) ? rsi.toFixed(1) : "-"} | MACD ${Number.isFinite(macd) ? macd.toFixed(2) : "-"}` };
 }
 
+function getFusionWeights() {
+  const sentimentPct = fusionSlider ? Number(fusionSlider.value) : 60;
+  const clamped = Math.max(0, Math.min(100, sentimentPct));
+  return {
+    sentiment: clamped / 100,
+    technical: (100 - clamped) / 100,
+    sentimentPct: clamped,
+    technicalPct: 100 - clamped,
+  };
+}
+
+function updateFusionLabels() {
+  if (!sentimentLabel || !technicalLabel) return;
+  const weights = getFusionWeights();
+  sentimentLabel.textContent = `Sentiment (AI): ${weights.sentimentPct}%`;
+  technicalLabel.textContent = `Technical (Math): ${weights.technicalPct}%`;
+}
+
+function applyFusionSynthesis() {
+  if (!lastFusionContext) return;
+  const { nlpScore, technicalScore, nlpLabel, technicalLabelText, analysis } = lastFusionContext;
+  const synthesis = synthesisFromScores(nlpScore, technicalScore);
+  const weights = getFusionWeights();
+
+  aiSentimentCard.classList.remove("loading");
+  applyConfidenceVisuals(synthesis.className.toUpperCase(), Math.round(Math.abs(Number(synthesis.scoreText))));
+  aiSentimentBadge.textContent = synthesis.label;
+  aiConfidenceValue.textContent = synthesis.scoreText;
+  aiConfidenceBar.style.width = synthesis.barWidth;
+  nlpSentimentValue.textContent = nlpLabel;
+  technicalMomentumValue.textContent = technicalLabelText;
+  aiSentimentText.textContent =
+    `${analysis}\n\nSynthesis: ${synthesis.label} (NLP ${weights.sentimentPct}% + Technical ${weights.technicalPct}%).`;
+}
+
 function synthesisFromScores(nlpScore, technicalScore) {
-  const value = ((nlpScore * 0.6) + (technicalScore * 0.4)) * 100;
+  const { sentiment: sw, technical: tw } = getFusionWeights();
+  const value = ((nlpScore * sw) + (technicalScore * tw)) * 100;
   if (value >= 25) {
     return {
       label: t("synthesisStrongBuy"),
@@ -1020,6 +1061,13 @@ async function loadAiSentiment(ticker, headlines, opts = {}) {
   }
 
   const synthesis = synthesisFromScores(nlpScore, technical.score);
+  lastFusionContext = {
+    nlpScore,
+    technicalScore: technical.score,
+    nlpLabel,
+    technicalLabelText: technical.label,
+    analysis,
+  };
   aiSentimentCard.classList.remove("loading");
   applyConfidenceVisuals(synthesis.className.toUpperCase(), Math.round(Math.abs(Number(synthesis.scoreText))));
   aiSentimentBadge.textContent = synthesis.label;
@@ -1027,7 +1075,9 @@ async function loadAiSentiment(ticker, headlines, opts = {}) {
   aiConfidenceBar.style.width = synthesis.barWidth;
   nlpSentimentValue.textContent = nlpLabel;
   technicalMomentumValue.textContent = technical.label;
-  aiSentimentText.textContent = `${analysis}\n\nSynthesis: ${synthesis.label} (NLP 60% + Technical 40%).`;
+  const weights = getFusionWeights();
+  aiSentimentText.textContent =
+    `${analysis}\n\nSynthesis: ${synthesis.label} (NLP ${weights.sentimentPct}% + Technical ${weights.technicalPct}%).`;
 }
 
 async function loadNews(ticker) {
@@ -1241,16 +1291,11 @@ async function loadScreener() {
 }
 
 // --- FUSION MODEL SLIDER LOGIC ---
-const fusionSlider = document.getElementById("fusionSlider");
-const sentimentLabel = document.getElementById("sentimentLabel");
-const technicalLabel = document.getElementById("technicalLabel");
+updateFusionLabels();
 
 if (fusionSlider) {
-  fusionSlider.addEventListener("input", (e) => {
-    const sentimentWeight = e.target.value;
-    const technicalWeight = 100 - sentimentWeight;
-
-    sentimentLabel.textContent = `Sentiment (AI): ${sentimentWeight}%`;
-    technicalLabel.textContent = `Technical (Math): ${technicalWeight}%`;
+  fusionSlider.addEventListener("input", () => {
+    updateFusionLabels();
+    applyFusionSynthesis();
   });
 }
