@@ -1239,3 +1239,18 @@ async function loadScreener() {
     screenerResults.innerHTML = `<span class="radar-loading">${t("radarError")}</span>`;
   }
 }
+
+// --- FUSION MODEL SLIDER LOGIC ---
+const fusionSlider = document.getElementById("fusionSlider");
+const sentimentLabel = document.getElementById("sentimentLabel");
+const technicalLabel = document.getElementById("technicalLabel");
+
+if (fusionSlider) {
+  fusionSlider.addEventListener("input", (e) => {
+    const sentimentWeight = e.target.value;
+    const technicalWeight = 100 - sentimentWeight;
+
+    sentimentLabel.textContent = `Sentiment (AI): ${sentimentWeight}%`;
+    technicalLabel.textContent = `Technical (Math): ${technicalWeight}%`;
+  });
+}

@@ -45,6 +45,17 @@
         <button id="scanBtn" class="btn-master-analyze" type="button" data-i18n="analyzeBtn">Analyze</button>
       </div>
 
+      <div class="fusion-slider-container" style="margin: 20px 0; padding: 15px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 500; font-size: 0.9rem;">
+          <span id="sentimentLabel" style="color: var(--accent);">Sentiment (AI): 60%</span>
+          <span id="technicalLabel" style="color: var(--muted);">Technical (Math): 40%</span>
+        </div>
+        <input type="range" id="fusionSlider" min="0" max="100" value="60" style="width: 100%; cursor: pointer; accent-color: var(--accent);">
+        <div style="text-align: center; font-size: 0.75rem; color: var(--muted); margin-top: 8px;">
+          Customize your strategy weight (Day Trader vs Long-Term)
+        </div>
+      </div>
+
       <!-- Main body -->
       <div class="main-layout">
         <!-- Full-width content: chart + news + radar -->
