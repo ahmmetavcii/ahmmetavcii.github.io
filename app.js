@@ -48,6 +48,7 @@ const I18N = {
     newsNoneRelevant:
       "No recent relevant financial news found for this ticker.",
     aiSentimentTitle: "FinSense Unified Signal",
+    fusionConfirm: "Recalculate analysis with Sentiment (AI) {s}% and Technical {t}%?",
     aiConfidence: "Synthesis Score",
     aiAnalyzing: "AI is analyzing the news...",
     aiUnavailable: "AI analysis is currently unavailable.",
@@ -138,6 +139,7 @@ const I18N = {
     newsNoneRelevant:
       "Bu sembol i\u00e7in ilgili finansal haber bulunamad\u0131.",
     aiSentimentTitle: "FinSense Birlesik Sinyal",
+    fusionConfirm: "Analiz Sentiment (AI) %{s} ve Teknik %{t} ile yeniden hesaplansin mi?",
     aiConfidence: "Sentez Skoru",
     aiAnalyzing: "AI haberleri analiz ediyor...",
     aiUnavailable: "AI analizi \u015fu anda kullan\u0131lam\u0131yor.",
@@ -272,8 +274,10 @@ let activeSuggestionIndex = -1;
 let lastFusionContext = null;
 
 const fusionSlider = document.getElementById("fusionSlider");
+const fusionSliderWrap = document.getElementById("fusionSliderWrap");
 const sentimentLabel = document.getElementById("sentimentLabel");
 const technicalLabel = document.getElementById("technicalLabel");
+let lastFusionSliderValue = fusionSlider ? Number(fusionSlider.value) : 60;
 
 const CHART_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><polyline points="7 14 11 10 14 13 20 7"/></svg>';
@@ -888,6 +892,7 @@ if (chartRange) {
 // Live News
 // ---------------------------------------------------------------------------
 function setAiSentimentLoading() {
+  setFusionSliderVisible(false);
   aiSentimentCard.classList.add("loading");
   aiSentimentCard.classList.remove("conf-low", "conf-med", "conf-high");
   aiSentimentCard.classList.add("conf-med");
@@ -1012,6 +1017,10 @@ function getFusionWeights() {
   };
 }
 
+function setFusionSliderVisible(visible) {
+  if (fusionSliderWrap) fusionSliderWrap.classList.toggle("hidden", !visible);
+}
+
 function updateFusionLabels() {
   if (!sentimentLabel || !technicalLabel) return;
   const weights = getFusionWeights();
@@ -1110,7 +1119,13 @@ async function loadAiSentiment(ticker, headlines, opts = {}) {
     nlpLabel,
     technicalLabelText: technical.label,
     analysis,
+    ticker,
+    headlines: headlines.slice(),
+    newsStatus: opts.newsStatus || "ok",
   };
+  lastFusionSliderValue = getFusionWeights().sentimentPct;
+  setFusionSliderVisible(true);
+  updateFusionLabels();
   aiSentimentCard.classList.remove("loading");
   applyConfidenceVisuals(synthesis.className.toUpperCase(), Math.round(Math.abs(Number(synthesis.scoreText))));
   aiSentimentBadge.textContent = synthesis.label;
@@ -1335,10 +1350,36 @@ async function loadScreener() {
 
 // --- FUSION MODEL SLIDER LOGIC ---
 updateFusionLabels();
+setFusionSliderVisible(false);
+
+async function handleFusionSliderChange() {
+  if (!fusionSlider || !lastFusionContext) return;
+
+  const newVal = Number(fusionSlider.value);
+  if (newVal === lastFusionSliderValue) return;
+
+  const weights = getFusionWeights();
+  const msg = t("fusionConfirm")
+    .replace("{s}", String(weights.sentimentPct))
+    .replace("{t}", String(weights.technicalPct));
+
+  if (!window.confirm(msg)) {
+    fusionSlider.value = String(lastFusionSliderValue);
+    updateFusionLabels();
+    return;
+  }
+
+  lastFusionSliderValue = newVal;
+  await loadAiSentiment(
+    lastFusionContext.ticker,
+    lastFusionContext.headlines || [],
+    { newsStatus: lastFusionContext.newsStatus || "ok" },
+  );
+}
 
 if (fusionSlider) {
-  fusionSlider.addEventListener("input", () => {
-    updateFusionLabels();
-    applyFusionSynthesis();
+  fusionSlider.addEventListener("input", updateFusionLabels);
+  fusionSlider.addEventListener("change", () => {
+    void handleFusionSliderChange();
   });
 }

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=8" />
+    <link rel="stylesheet" href="/styles.css?v=10" />
   </head>
   <body class="splash-active">
 
@@ -56,15 +56,6 @@
           <div id="searchSuggestions" class="suggestions-dropdown hidden"></div>
         </div>
         <button id="scanBtn" class="btn-master-analyze" type="button" data-i18n="analyzeBtn">Analyze</button>
-
-        <div class="fusion-slider-container">
-          <div class="fusion-slider-header">
-            <span id="sentimentLabel" class="sentiment-label">Sentiment (AI): 60%</span>
-            <span id="technicalLabel" class="technical-label">Technical (Math): 40%</span>
-          </div>
-          <input type="range" id="fusionSlider" min="0" max="100" value="60" aria-label="Strategy weight: Sentiment vs Technical" />
-          <p class="fusion-slider-hint">Customize your strategy weight (Day Trader vs Long-Term)</p>
-        </div>
       </div>
 
       <!-- Main body -->
@@ -119,6 +110,13 @@
                   <strong id="technicalMomentumValue">Neutral</strong>
                 </span>
               </div>
+              <div id="fusionSliderWrap" class="fusion-slider-container hidden">
+                <div class="fusion-slider-header">
+                  <span id="sentimentLabel" class="sentiment-label">Sentiment (AI): 60%</span>
+                  <span id="technicalLabel" class="technical-label">Technical (Math): 40%</span>
+                </div>
+                <input type="range" id="fusionSlider" min="0" max="100" value="60" aria-label="Strategy weight: Sentiment vs Technical" />
+              </div>
               <div class="ai-confidence-row">
                 <span class="ai-confidence-label" data-i18n="aiConfidence">Synthesis Score</span>
                 <span id="aiConfidenceValue" class="ai-confidence-value">50%</span>
@@ -172,6 +170,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="/app.js?v=8"></script>
+    <script src="/app.js?v=9"></script>
   </body>
 </html>
