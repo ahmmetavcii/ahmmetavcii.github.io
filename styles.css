@@ -2477,60 +2477,29 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
 
 /* ===== Desktop (821px+) refinements ===== */
 @media (min-width: 821px) {
-  .platform-strip,
-  .empty-quick-picks,
-  .chart-area,
-  .chart-featured,
-  .news-section,
-  .radar-section,
-  .chart-sparklines {
-    width: calc(100% - 40px);
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .platform-strip {
-    margin-bottom: 14px;
-  }
-
-  .chart-area {
-    margin-top: 16px;
-    margin-bottom: 10px;
-  }
-
-  .chart-featured {
-    margin-bottom: 4px;
-  }
-
-  .news-section {
-    margin-top: 6px;
-    margin-bottom: 14px;
-  }
-
-  .radar-section {
-    margin-bottom: 20px;
-  }
-
   .empty-quick-picks {
-    margin-top: 16px;
-    margin-bottom: 14px;
     padding: 28px 28px 22px;
   }
 
   .empty-quick-picks .chart-empty-state {
-    max-width: 760px;
-    margin-inline: auto;
+    max-width: none;
+    margin-inline: 0;
   }
 
   .empty-quick-picks .chart-empty-visual {
     height: 96px;
     width: min(100%, 360px);
+    margin-inline: auto;
+  }
+
+  .empty-quick-picks .chart-empty-title,
+  .empty-quick-picks .chart-empty-sub {
+    max-width: 640px;
+    margin-inline: auto;
   }
 
   .empty-quick-picks .platform-features {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    max-width: 100%;
   }
 
   .empty-quick-picks .chart-featured--empty,
