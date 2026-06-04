@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=13" />
+    <link rel="stylesheet" href="/styles.css?v=14" />
   </head>
   <body class="splash-active">
 
@@ -77,12 +77,17 @@
               <span id="chartSubtitle" class="chart-subtitle" data-i18n="chartSubDefault">Last 3 months closing prices</span>
             </div>
           </div>
+          <div id="chartFeatured" class="chart-featured" aria-label="Featured instruments"></div>
           <div class="chart-area">
-            <div id="chartPlaceholder" class="chart-placeholder" data-i18n="chartPlaceholder">
-              Click an instrument to view its price chart.
+            <div id="chartPlaceholder" class="chart-placeholder">
+              <div class="chart-welcome">
+                <h3 class="chart-welcome-title" data-i18n="chartWelcomeTitle">Markets at a glance</h3>
+                <p class="chart-welcome-sub" data-i18n="chartWelcomeSub">Pick a symbol below or search above — your chart loads automatically.</p>
+              </div>
             </div>
             <canvas id="priceChart" style="display:none"></canvas>
           </div>
+          <div id="chartSparklines" class="chart-sparklines" hidden></div>
 
           <!-- Live News -->
           <div class="news-section" id="newsSection" style="display:none">
@@ -176,6 +181,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="/app.js?v=13"></script>
+    <script src="/app.js?v=14"></script>
   </body>
 </html>

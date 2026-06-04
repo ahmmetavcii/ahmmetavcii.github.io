@@ -35,6 +35,9 @@ const I18N = {
     chartRange3M: "3M",
     chartRange6M: "6M",
     chartPlaceholder: "Click an instrument to view its price chart.",
+    chartWelcomeTitle: "Markets at a glance",
+    chartWelcomeSub: "Pick a symbol below or search above — your chart loads automatically.",
+    chartFeaturedLabel: "Quick picks",
     loadingChart: "Loading chart\u2026",
     chartUnavail: "Chart unavailable.",
     chartLoadErr: "Could not load chart data.",
@@ -132,6 +135,9 @@ const I18N = {
     chartRange3M: "3A",
     chartRange6M: "6A",
     chartPlaceholder: "Grafik g\u00f6rmek i\u00e7in bir enstr\u00fcman se\u00e7in.",
+    chartWelcomeTitle: "Piyasalara genel bak\u0131\u015f",
+    chartWelcomeSub: "A\u015fa\u011f\u0131dan bir sembol se\u00e7in veya yukar\u0131dan aray\u0131n — grafik otomatik y\u00fcklenir.",
+    chartFeaturedLabel: "H\u0131zl\u0131 se\u00e7im",
     loadingChart: "Grafik y\u00fckleniyor\u2026",
     chartUnavail: "Grafik kullan\u0131lam\u0131yor.",
     chartLoadErr: "Grafik verileri y\u00fcklenemedi.",
@@ -238,6 +244,8 @@ function applyLanguage() {
   updateChartPeriodSubtitle();
   refreshScreenerIndicatorLabels();
   updateScreenerIndicatorCount();
+  buildChartFeaturedBar();
+  refreshSparklineColors();
 }
 
 // ---------------------------------------------------------------------------
@@ -256,6 +264,8 @@ const masterSearchInputWrap = document.querySelector(".master-search-input-wrap"
 const chartTitleEl = document.getElementById("chartTitle");
 const chartSubtitle = document.getElementById("chartSubtitle");
 const chartPlaceholder = document.getElementById("chartPlaceholder");
+const chartFeatured = document.getElementById("chartFeatured");
+const chartSparklines = document.getElementById("chartSparklines");
 const priceCanvas = document.getElementById("priceChart");
 const chartRange = document.getElementById("chartRange");
 
@@ -299,6 +309,21 @@ let lastFusionSliderValue = fusionSlider ? Number(fusionSlider.value) : 60;
 
 const CHART_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><polyline points="7 14 11 10 14 13 20 7"/></svg>';
+
+const DEFAULT_DASHBOARD_TICKER = "AAPL";
+const FEATURED_TICKERS = [
+  { symbol: "AAPL", nameEn: "Apple", nameTr: "Apple" },
+  { symbol: "NVDA", nameEn: "NVIDIA", nameTr: "NVIDIA" },
+  { symbol: "MSFT", nameEn: "Microsoft", nameTr: "Microsoft" },
+  { symbol: "BTC-USD", nameEn: "Bitcoin", nameTr: "Bitcoin" },
+  { symbol: "ETH-USD", nameEn: "Ethereum", nameTr: "Ethereum" },
+  { symbol: "THYAO.IS", nameEn: "THY", nameTr: "THY" },
+  { symbol: "VOO", nameEn: "S&P 500 ETF", nameTr: "S&P 500 ETF" },
+];
+const SPARKLINE_TICKERS = ["BTC-USD", "NVDA", "THYAO.IS", "ETH-USD"];
+
+let dashboardBootstrapped = false;
+let sparklineCharts = [];
 
 const SCREENER_INDICATOR_CATALOG = [
   { id: "rsi", en: "RSI (14)", tr: "RSI (14)", descEn: "Momentum — oversold below 30, overbought above 70", descTr: "Momentum — 30 altı aşırı satış, 70 üstü aşırı alım", defaultOn: true },
@@ -347,7 +372,10 @@ applyLanguage();
 // ---------------------------------------------------------------------------
 function initSplashScreen() {
   const splash = document.getElementById("splashScreen");
-  if (!splash) return;
+  if (!splash) {
+    scheduleDashboardBootstrap();
+    return;
+  }
 
   document.body.classList.add("splash-active");
 
@@ -360,8 +388,62 @@ function initSplashScreen() {
     document.body.classList.remove("splash-active");
     window.setTimeout(() => {
       splash.remove();
+      scheduleDashboardBootstrap();
     }, 600);
   }, holdMs);
+}
+
+function featuredTickerName(item) {
+  return currentLang === "tr" ? item.nameTr : item.nameEn;
+}
+
+function buildChartFeaturedBar() {
+  if (!chartFeatured) return;
+  chartFeatured.innerHTML = `<span class="chart-featured-label">${t("chartFeaturedLabel")}</span>`;
+  const group = document.createElement("div");
+  group.className = "chart-featured-group";
+  group.setAttribute("role", "group");
+
+  FEATURED_TICKERS.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chart-featured-btn";
+    btn.dataset.ticker = item.symbol;
+    btn.title = item.symbol;
+    const market =
+      item.symbol.includes("-USD") ? "CRYPTO" : item.symbol.endsWith(".IS") ? "BIST" : "US";
+    btn.innerHTML = `<span class="chart-featured-symbol">${item.symbol}</span><span class="chart-featured-name">${featuredTickerName(item)}</span>${marketBadgeHTML(market)}`;
+    btn.addEventListener("click", () => {
+      tickerInput.value = item.symbol;
+      analyzeTicker(item.symbol);
+    });
+    group.appendChild(btn);
+  });
+
+  chartFeatured.appendChild(group);
+  updateFeaturedTickerActive(lastChartTicker || DEFAULT_DASHBOARD_TICKER);
+}
+
+function updateFeaturedTickerActive(ticker) {
+  if (!chartFeatured) return;
+  const sym = String(ticker || "").toUpperCase();
+  chartFeatured.querySelectorAll(".chart-featured-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.ticker === sym);
+  });
+}
+
+function scheduleDashboardBootstrap() {
+  if (dashboardBootstrapped) return;
+  dashboardBootstrapped = true;
+  buildChartFeaturedBar();
+  bootstrapDashboard();
+}
+
+async function bootstrapDashboard() {
+  if (lastChartTicker) return;
+  tickerInput.value = DEFAULT_DASHBOARD_TICKER;
+  await analyzeTicker(DEFAULT_DASHBOARD_TICKER);
+  loadSparklinePreviews().catch(() => {});
 }
 
 initSplashScreen();
@@ -411,14 +493,17 @@ function classifyTicker(ticker) {
   return "us";
 }
 
-async function analyzeTicker() {
-  const normalizedTicker = tickerInput.value.trim().toUpperCase();
+async function analyzeTicker(explicitTicker) {
+  const normalizedTicker = (explicitTicker != null ? String(explicitTicker) : tickerInput.value)
+    .trim()
+    .toUpperCase();
   if (!normalizedTicker) {
     tickerInput.focus();
     return;
   }
   hideSuggestions();
   tickerInput.value = normalizedTicker;
+  updateFeaturedTickerActive(normalizedTicker);
   setAnalyzing(true);
   chartPlaceholder.textContent = t("loadingData");
   chartPlaceholder.classList.remove("error");
@@ -648,6 +733,134 @@ function refreshChartColors() {
     priceChart.options.plugins.legend.labels.color = c.tick;
   }
   priceChart.update("none");
+  refreshSparklineColors();
+}
+
+function destroySparklineCharts() {
+  sparklineCharts.forEach((ch) => {
+    try {
+      ch.destroy();
+    } catch {
+      /* ignore */
+    }
+  });
+  sparklineCharts = [];
+}
+
+function refreshSparklineColors() {
+  const c = getChartColors();
+  const accent = getComputedStyle(document.body).getPropertyValue("--accent").trim() || "#3b82f6";
+  sparklineCharts.forEach((ch) => {
+    if (!ch || !ch.data.datasets[0]) return;
+    ch.data.datasets[0].borderColor = accent;
+    ch.options.scales.x.ticks.color = c.tick;
+    ch.options.scales.x.grid.color = "transparent";
+    ch.options.scales.y.ticks.color = c.tick;
+    ch.options.scales.y.grid.color = c.grid;
+    ch.update("none");
+  });
+}
+
+function formatSparklinePrice(ticker, value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const digits = ticker.endsWith(".IS") ? 2 : n >= 1000 ? 2 : n >= 1 ? 2 : 4;
+  const prefix = ticker.endsWith(".IS") ? "₺" : "$";
+  return `${prefix}${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+}
+
+async function loadSparklinePreviews() {
+  if (!chartSparklines || typeof Chart === "undefined") return;
+
+  destroySparklineCharts();
+  chartSparklines.innerHTML = "";
+  chartSparklines.hidden = false;
+
+  const previews = SPARKLINE_TICKERS.filter((tk) => tk !== lastChartTicker).slice(0, 4);
+  if (!previews.length) {
+    chartSparklines.hidden = true;
+    return;
+  }
+
+  const c = getChartColors();
+  const accent = getComputedStyle(document.body).getPropertyValue("--accent").trim() || "#3b82f6";
+
+  await Promise.all(
+    previews.map(async (ticker) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "sparkline-card";
+      card.dataset.ticker = ticker;
+      const market =
+        ticker.includes("-USD") ? "CRYPTO" : ticker.endsWith(".IS") ? "BIST" : "US";
+      card.innerHTML = `
+        <div class="sparkline-head">
+          <span class="sparkline-ticker">${ticker} ${marketBadgeHTML(market)}</span>
+          <span class="sparkline-price">…</span>
+        </div>
+        <div class="sparkline-canvas-wrap"><canvas aria-hidden="true"></canvas></div>
+      `;
+      card.addEventListener("click", () => {
+        tickerInput.value = ticker;
+        analyzeTicker(ticker);
+      });
+      chartSparklines.appendChild(card);
+
+      const canvas = card.querySelector("canvas");
+      const priceEl = card.querySelector(".sparkline-price");
+
+      try {
+        const data = await safeFetch(
+          `/api/chart?ticker=${encodeURIComponent(ticker)}&period=1mo`,
+        );
+        const prices = Array.isArray(data.prices) ? data.prices : [];
+        const last = prices.length ? prices[prices.length - 1] : null;
+        if (priceEl) priceEl.textContent = formatSparklinePrice(ticker, last);
+
+        const ctx = canvas.getContext("2d");
+        const ch = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: data.dates || [],
+            datasets: [
+              {
+                label: ticker,
+                data: prices,
+                borderColor: accent,
+                backgroundColor: "transparent",
+                borderWidth: 1.5,
+                pointRadius: 0,
+                tension: 0.35,
+                spanGaps: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: {
+              x: {
+                display: false,
+                ticks: { color: c.tick },
+                grid: { color: "transparent" },
+              },
+              y: {
+                display: false,
+                ticks: { color: c.tick },
+                grid: { color: c.grid },
+              },
+            },
+          },
+        });
+        sparklineCharts.push(ch);
+      } catch {
+        if (priceEl) priceEl.textContent = "—";
+        card.classList.add("sparkline-card-error");
+      }
+    }),
+  );
 }
 
 function buildGradient(ctx, canvas) {
@@ -890,6 +1103,14 @@ async function loadChart(ticker, options = {}) {
     setChartRangeActive(chartPeriod);
     chartSubtitle.textContent = chartPeriodSubtitle(chartPeriod);
     await loadNews(ticker);
+    if (chartSparklines && sparklineCharts.length) {
+      const previews = SPARKLINE_TICKERS.filter((tk) => tk !== ticker).slice(0, 4);
+      chartSparklines.querySelectorAll(".sparkline-card").forEach((card) => {
+        const tk = card.dataset.ticker;
+        card.hidden = !previews.includes(tk);
+      });
+      chartSparklines.hidden = !chartSparklines.querySelector(".sparkline-card:not([hidden])");
+    }
   } catch (err) {
     const msg = String(err && err.message ? err.message : "");
     const likelyInvalid = /not found|unavailable|invalid|404/i.test(msg);
