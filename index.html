@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=14" />
+    <link rel="stylesheet" href="/styles.css?v=15" />
   </head>
   <body class="splash-active">
 
@@ -106,33 +106,42 @@
                 <span id="aiSentimentBadge" class="ai-verdict-badge neutral">NEUTRAL</span>
               </div>
               <div class="ai-signal-breakdown">
-                <span class="ai-signal-chip">
-                  <span data-i18n="nlpSentimentLabel">NLP Sentiment</span>
+                <div id="nlpChip" class="ai-signal-chip neutral">
+                  <span class="ai-signal-chip-label" data-i18n="nlpFromNews">From news (AI)</span>
                   <strong id="nlpSentimentValue">Neutral</strong>
-                </span>
-                <span class="ai-signal-chip">
-                  <span data-i18n="technicalMomentumLabel">Technical Momentum</span>
+                </div>
+                <div id="techChip" class="ai-signal-chip neutral">
+                  <span class="ai-signal-chip-label" data-i18n="techFromChart">From chart (math)</span>
                   <strong id="technicalMomentumValue">Neutral</strong>
-                </span>
+                </div>
               </div>
               <div id="fusionSliderWrap" class="fusion-slider-container hidden">
+                <p class="fusion-slider-title" data-i18n="fusionBlendTitle">How much each source counts</p>
                 <div class="fusion-slider-header">
-                  <span id="sentimentLabel" class="sentiment-label">Sentiment (AI): 60%</span>
-                  <span id="technicalLabel" class="technical-label">Technical (Math): 40%</span>
+                  <span id="sentimentLabel" class="sentiment-label">News weight: 60%</span>
+                  <span id="technicalLabel" class="technical-label">Chart weight: 40%</span>
                 </div>
                 <div class="fusion-slider-row">
-                  <input type="range" id="fusionSlider" min="0" max="100" value="60" aria-label="Strategy weight: Sentiment vs Technical" />
+                  <input type="range" id="fusionSlider" min="0" max="100" value="60" aria-label="Blend: news vs technical weight" />
                   <button type="button" id="fusionApplyBtn" class="btn-fusion-apply hidden" data-i18n="fusionApplyBtn">Apply</button>
                 </div>
+                <p id="fusionHint" class="fusion-hint"></p>
               </div>
-              <div class="ai-confidence-row">
-                <span class="ai-confidence-label" data-i18n="aiConfidence">Synthesis Score</span>
-                <span id="aiConfidenceValue" class="ai-confidence-value">50%</span>
+              <div class="ai-synthesis-panel">
+                <div class="ai-confidence-row">
+                  <span class="ai-confidence-label" data-i18n="aiCombinedScore">Combined score</span>
+                  <span id="aiConfidenceValue" class="ai-confidence-value">0</span>
+                </div>
+                <div class="ai-confidence-track" aria-hidden="true">
+                  <span id="aiConfidenceBar" class="ai-confidence-bar neutral" style="width:0%"></span>
+                </div>
+                <p id="aiScoreHint" class="ai-score-hint"></p>
+                <p id="aiSynthesisExplain" class="ai-synthesis-explain"></p>
               </div>
-              <div class="ai-confidence-track">
-                <span id="aiConfidenceBar" class="ai-confidence-bar neutral" style="width:50%"></span>
+              <div class="ai-analysis-block">
+                <h4 class="ai-analysis-heading" data-i18n="newsInsightTitle">News insight</h4>
+                <p id="aiSentimentText" class="ai-sentiment-text" data-i18n="aiAnalyzing">AI is analyzing the news...</p>
               </div>
-              <p id="aiSentimentText" class="ai-sentiment-text" data-i18n="aiAnalyzing">AI is analyzing the news...</p>
             </div>
             <div id="newsList" class="news-list">
               <span class="radar-loading">&nbsp;</span>
@@ -181,6 +190,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="/app.js?v=14"></script>
+    <script src="/app.js?v=15"></script>
   </body>
 </html>

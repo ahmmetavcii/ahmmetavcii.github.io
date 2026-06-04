@@ -62,6 +62,25 @@ const I18N = {
       "Headlines were filtered for relevance; AI summary is based on technicals only.",
     nlpSentimentLabel: "NLP Sentiment",
     technicalMomentumLabel: "Technical Momentum",
+    nlpFromNews: "From news (AI)",
+    techFromChart: "From chart (math)",
+    fusionBlendTitle: "How much each source counts",
+    fusionWeightNews: "News weight: {n}%",
+    fusionWeightTech: "Chart weight: {n}%",
+    fusionHintBlend:
+      "Final signal = news ({news}%) + chart ({tech}%). This is blend weight, not how bearish/bullish news is.",
+    fusionNewsOff: "News is ignored (0% weight) — only chart indicators decide.",
+    fusionTechOff: "Chart is ignored (0% weight) — only news sentiment decides.",
+    fusionConflict: "News and chart disagree — move the slider toward the side you trust.",
+    aiCombinedScore: "Combined score",
+    scoreZoneHint: "-19 to +19 = Neutral · +20 and up = Buy · -20 and below = Sell",
+    scoreHintValue: "Score {score} → {zone}",
+    zoneBuy: "Buy zone",
+    zoneSell: "Sell zone",
+    zoneNeutral: "Neutral zone",
+    newsInsightTitle: "News insight",
+    synthesisExplain:
+      "Result: {verdict} ({score}). News: {nlp} ({newsW}% weight). Chart: {tech} ({techW}% weight).",
     synthesisStrongBuy: "Strong Buy",
     synthesisNeutral: "Neutral",
     synthesisStrongSell: "Strong Sell",
@@ -162,6 +181,25 @@ const I18N = {
       "Haberler ilgi filtresinden ge\u00e7medi; \u00f6zet teknik g\u00f6stergelere dayan\u0131yor.",
     nlpSentimentLabel: "NLP Duyarliligi",
     technicalMomentumLabel: "Teknik Momentum",
+    nlpFromNews: "Haberlerden (AI)",
+    techFromChart: "Grafikten (matematik)",
+    fusionBlendTitle: "Kaynaklarin etki payi",
+    fusionWeightNews: "Haber agirligi: %{n}",
+    fusionWeightTech: "Grafik agirligi: %{n}",
+    fusionHintBlend:
+      "Son sinyal = haber (%{news}) + grafik (%{tech}). Bu, karisim oranidir; haberin bearish yuzdesi degildir.",
+    fusionNewsOff: "Haber devre disi (%0) — yalnizca grafik gostergeleri sayilir.",
+    fusionTechOff: "Grafik devre disi (%0) — yalnizca haber duyarliligi sayilir.",
+    fusionConflict: "Haber ile grafik celisiyor — guvendigin tarafa kaydirici cekin.",
+    aiCombinedScore: "Birlesik skor",
+    scoreZoneHint: "-19 ile +19 = Notr · +20 ve ustu = Al · -20 ve alti = Sat",
+    scoreHintValue: "Skor {score} → {zone}",
+    zoneBuy: "Alim bolgesi",
+    zoneSell: "Satim bolgesi",
+    zoneNeutral: "Notr bolge",
+    newsInsightTitle: "Haber ozeti",
+    synthesisExplain:
+      "Sonuc: {verdict} ({score}). Haber: {nlp} (%{newsW} agirlik). Grafik: {tech} (%{techW} agirlik).",
     synthesisStrongBuy: "Guclu Al",
     synthesisNeutral: "Notr",
     synthesisStrongSell: "Guclu Sat",
@@ -246,6 +284,7 @@ function applyLanguage() {
   updateScreenerIndicatorCount();
   buildChartFeaturedBar();
   refreshSparklineColors();
+  if (lastFusionContext) renderUnifiedSignal();
 }
 
 // ---------------------------------------------------------------------------
@@ -276,8 +315,13 @@ const aiSentimentText = document.getElementById("aiSentimentText");
 const aiSentimentBadge = document.getElementById("aiSentimentBadge");
 const aiConfidenceValue = document.getElementById("aiConfidenceValue");
 const aiConfidenceBar = document.getElementById("aiConfidenceBar");
+const nlpChip = document.getElementById("nlpChip");
+const techChip = document.getElementById("techChip");
 const nlpSentimentValue = document.getElementById("nlpSentimentValue");
 const technicalMomentumValue = document.getElementById("technicalMomentumValue");
+const fusionHint = document.getElementById("fusionHint");
+const aiScoreHint = document.getElementById("aiScoreHint");
+const aiSynthesisExplain = document.getElementById("aiSynthesisExplain");
 
 const radarStatus = document.getElementById("radarStatus");
 const screenerMarketSelector = document.getElementById("screenerMarketSelector");
@@ -1161,6 +1205,10 @@ function setAiSentimentLoading() {
   aiConfidenceBar.style.width = "0%";
   nlpSentimentValue.textContent = t("synthesisNeutral");
   technicalMomentumValue.textContent = t("technicalNeutral");
+  setSignalChipTone(nlpChip, "neutral");
+  setSignalChipTone(techChip, "neutral");
+  if (fusionHint) fusionHint.textContent = "";
+  if (aiSynthesisExplain) aiSynthesisExplain.textContent = "";
   aiSentimentText.textContent = t("aiAnalyzing");
 }
 
@@ -1279,11 +1327,99 @@ function setFusionSliderVisible(visible) {
   if (fusionSliderWrap) fusionSliderWrap.classList.toggle("hidden", !visible);
 }
 
+function scoreToTone(score) {
+  const s = Number(score);
+  if (s > 0.1) return "bullish";
+  if (s < -0.1) return "bearish";
+  return "neutral";
+}
+
+function setSignalChipTone(chipEl, tone) {
+  if (!chipEl) return;
+  chipEl.classList.remove("bullish", "bearish", "neutral");
+  chipEl.classList.add(tone || "neutral");
+}
+
+function detectSignalConflict(nlpScore, technicalScore) {
+  const n = Number(nlpScore);
+  const t = Number(technicalScore);
+  if (n > 0.1 && t < -0.1) return true;
+  if (n < -0.1 && t > 0.1) return true;
+  return false;
+}
+
+function buildFusionHint(weights, conflict) {
+  const parts = [
+    t("fusionHintBlend")
+      .replace("{news}", String(weights.sentimentPct))
+      .replace("{tech}", String(weights.technicalPct)),
+  ];
+  if (weights.sentimentPct === 0) parts.push(t("fusionNewsOff"));
+  if (weights.technicalPct === 0) parts.push(t("fusionTechOff"));
+  if (conflict) parts.push(t("fusionConflict"));
+  return parts.join(" ");
+}
+
+function buildScoreHint(synthesis) {
+  return t("scoreHintValue")
+    .replace("{score}", synthesis.scoreText)
+    .replace("{zone}", synthesis.zoneLabel);
+}
+
+function buildSynthesisExplain(ctx, synthesis, weights) {
+  const conflict = detectSignalConflict(ctx.nlpScore, ctx.technicalScore);
+  let text = t("synthesisExplain")
+    .replace("{verdict}", synthesis.label)
+    .replace("{score}", synthesis.scoreText)
+    .replace("{nlp}", ctx.nlpLabel)
+    .replace("{newsW}", String(weights.sentimentPct))
+    .replace("{tech}", ctx.technicalLabelText)
+    .replace("{techW}", String(weights.technicalPct));
+  if (conflict) text += ` ${t("fusionConflict")}`;
+  return text;
+}
+
 function updateFusionLabels() {
   if (!sentimentLabel || !technicalLabel) return;
   const weights = getFusionWeights();
-  sentimentLabel.textContent = `Sentiment (AI): ${weights.sentimentPct}%`;
-  technicalLabel.textContent = `Technical (Math): ${weights.technicalPct}%`;
+  sentimentLabel.textContent = t("fusionWeightNews").replace("{n}", String(weights.sentimentPct));
+  technicalLabel.textContent = t("fusionWeightTech").replace("{n}", String(weights.technicalPct));
+  if (fusionHint && lastFusionContext) {
+    fusionHint.textContent = buildFusionHint(
+      weights,
+      detectSignalConflict(lastFusionContext.nlpScore, lastFusionContext.technicalScore),
+    );
+  }
+}
+
+function renderUnifiedSignal() {
+  if (!lastFusionContext) return;
+  const ctx = lastFusionContext;
+  const weights = getFusionWeights();
+  const synthesis = synthesisFromScores(ctx.nlpScore, ctx.technicalScore);
+  const conflict = detectSignalConflict(ctx.nlpScore, ctx.technicalScore);
+
+  aiSentimentCard.classList.remove("loading");
+  applyConfidenceVisuals(
+    synthesis.className.toUpperCase(),
+    Math.round(Math.abs(Number(synthesis.rawValue))),
+  );
+  aiSentimentBadge.textContent = synthesis.label;
+  aiConfidenceValue.textContent = synthesis.scoreText;
+  aiConfidenceBar.style.width = synthesis.barWidth;
+  nlpSentimentValue.textContent = ctx.nlpLabel;
+  technicalMomentumValue.textContent = ctx.technicalLabelText;
+  setSignalChipTone(nlpChip, scoreToTone(ctx.nlpScore));
+  setSignalChipTone(techChip, scoreToTone(ctx.technicalScore));
+
+  updateFusionLabels();
+  if (aiScoreHint) {
+    aiScoreHint.textContent = `${buildScoreHint(synthesis)} · ${t("scoreZoneHint")}`;
+  }
+  if (aiSynthesisExplain) {
+    aiSynthesisExplain.textContent = buildSynthesisExplain(ctx, synthesis, weights);
+  }
+  aiSentimentText.textContent = ctx.analysis;
 }
 
 function updateFusionApplyButton() {
@@ -1314,46 +1450,37 @@ function resetFusionApplyButton() {
 }
 
 function applyFusionSynthesis() {
-  if (!lastFusionContext) return;
-  const { nlpScore, technicalScore, nlpLabel, technicalLabelText, analysis } = lastFusionContext;
-  const synthesis = synthesisFromScores(nlpScore, technicalScore);
-  const weights = getFusionWeights();
-
-  aiSentimentCard.classList.remove("loading");
-  applyConfidenceVisuals(synthesis.className.toUpperCase(), Math.round(Math.abs(Number(synthesis.scoreText))));
-  aiSentimentBadge.textContent = synthesis.label;
-  aiConfidenceValue.textContent = synthesis.scoreText;
-  aiConfidenceBar.style.width = synthesis.barWidth;
-  nlpSentimentValue.textContent = nlpLabel;
-  technicalMomentumValue.textContent = technicalLabelText;
-  aiSentimentText.textContent =
-    `${analysis}\n\nSynthesis: ${synthesis.label} (NLP ${weights.sentimentPct}% + Technical ${weights.technicalPct}%).`;
+  renderUnifiedSignal();
 }
 
 function synthesisFromScores(nlpScore, technicalScore) {
   const { sentiment: sw, technical: tw } = getFusionWeights();
-  const value = ((nlpScore * sw) + (technicalScore * tw)) * 100;
+  const value = (nlpScore * sw + technicalScore * tw) * 100;
+  const rounded = Math.round(value);
+  let label;
+  let className;
+  let zoneLabel;
   if (value >= 20) {
-    return {
-      label: t("synthesisStrongBuy"),
-      className: "bullish",
-      scoreText: `+${Math.round(value)}`,
-      barWidth: `${Math.min(100, Math.round(Math.abs(value)))}%`,
-    };
+    label = t("synthesisStrongBuy");
+    className = "bullish";
+    zoneLabel = t("zoneBuy");
+  } else if (value <= -20) {
+    label = t("synthesisStrongSell");
+    className = "bearish";
+    zoneLabel = t("zoneSell");
+  } else {
+    label = t("synthesisNeutral");
+    className = "neutral";
+    zoneLabel = t("zoneNeutral");
   }
-  if (value <= -20) {
-    return {
-      label: t("synthesisStrongSell"),
-      className: "bearish",
-      scoreText: `${Math.round(value)}`,
-      barWidth: `${Math.min(100, Math.round(Math.abs(value)))}%`,
-    };
-  }
+  const scoreText = rounded > 0 ? `+${rounded}` : `${rounded}`;
   return {
-    label: t("synthesisNeutral"),
-    className: "neutral",
-    scoreText: `${Math.round(value)}`,
+    label,
+    className,
+    scoreText,
     barWidth: `${Math.min(100, Math.round(Math.abs(value)))}%`,
+    rawValue: value,
+    zoneLabel,
   };
 }
 
@@ -1410,18 +1537,8 @@ async function loadAiSentiment(ticker, headlines, opts = {}) {
   };
   lastFusionSliderValue = getFusionWeights().sentimentPct;
   setFusionSliderVisible(true);
-  updateFusionLabels();
   resetFusionApplyButton();
-  aiSentimentCard.classList.remove("loading");
-  applyConfidenceVisuals(synthesis.className.toUpperCase(), Math.round(Math.abs(Number(synthesis.scoreText))));
-  aiSentimentBadge.textContent = synthesis.label;
-  aiConfidenceValue.textContent = synthesis.scoreText;
-  aiConfidenceBar.style.width = synthesis.barWidth;
-  nlpSentimentValue.textContent = nlpLabel;
-  technicalMomentumValue.textContent = technical.label;
-  const weights = getFusionWeights();
-  aiSentimentText.textContent =
-    `${analysis}\n\nSynthesis: ${synthesis.label} (NLP ${weights.sentimentPct}% + Technical ${weights.technicalPct}%).`;
+  renderUnifiedSignal();
 }
 
 async function loadNews(ticker) {

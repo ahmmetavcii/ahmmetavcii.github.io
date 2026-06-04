@@ -673,6 +673,61 @@ body.light-mode .suggestion-name {
   to { opacity: 1; transform: translateY(0); }
 }
 
+.fusion-slider-title {
+  margin: 0 0 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-sec);
+}
+
+.fusion-hint {
+  margin: 8px 0 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.ai-synthesis-panel {
+  margin: 10px 0 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+body.light-mode .ai-synthesis-panel {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.ai-score-hint {
+  margin: 6px 0 0;
+  font-size: 0.64rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.ai-synthesis-explain {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.ai-analysis-block {
+  margin-top: 4px;
+}
+
+.ai-analysis-heading {
+  margin: 0 0 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
 /* ---- Fusion weight slider (inside analysis card) ---- */
 .fusion-slider-container {
   margin: 14px 0 6px;
@@ -1353,18 +1408,45 @@ body.light-mode .ai-sentiment-card {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 7px 8px;
+  padding: 7px 8px 7px 10px;
   border: 1px solid var(--border);
+  border-left: 3px solid var(--hold);
   border-radius: 9px;
   background: var(--chip-bg);
   font-size: 0.66rem;
   color: var(--muted);
 }
 
+.ai-signal-chip.bullish {
+  border-left-color: var(--buy);
+}
+
+.ai-signal-chip.bearish {
+  border-left-color: var(--sell);
+}
+
+.ai-signal-chip.neutral {
+  border-left-color: var(--hold);
+}
+
+.ai-signal-chip-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .ai-signal-chip strong {
   font-size: 0.75rem;
   color: var(--text);
   font-weight: 600;
+}
+
+.ai-signal-chip.bullish strong {
+  color: var(--buy);
+}
+
+.ai-signal-chip.bearish strong {
+  color: var(--sell);
 }
 
 .ai-sentiment-title {
