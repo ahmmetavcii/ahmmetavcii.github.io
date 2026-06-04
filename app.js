@@ -7,6 +7,8 @@
 // ---------------------------------------------------------------------------
 const I18N = {
   en: {
+    splashTagline: "One Clear Signal.",
+    splashSubtagline: "FinSense for the best investing experience.",
     addBtn: "+ Add",
     addingBtn: "Adding\u2026",
     analyzeBtn: "Analyze",
@@ -95,6 +97,8 @@ const I18N = {
     badgeCrypto: "Crypto",
   },
   tr: {
+    splashTagline: "Tek Net Sinyal.",
+    splashSubtagline: "En iyi yat\u0131r\u0131m deneyimi i\u00e7in FinSense.",
     addBtn: "+ Ekle",
     addingBtn: "Ekleniyor\u2026",
     analyzeBtn: "Analiz Et",
@@ -295,6 +299,32 @@ themeToggle.addEventListener("click", () => {
 
 applyTheme(getTheme());
 
+applyLanguage();
+
+// ---------------------------------------------------------------------------
+// Splash intro (every page load / refresh)
+// ---------------------------------------------------------------------------
+function initSplashScreen() {
+  const splash = document.getElementById("splashScreen");
+  if (!splash) return;
+
+  document.body.classList.add("splash-active");
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const holdMs = reducedMotion ? 700 : 2600;
+
+  window.setTimeout(() => {
+    splash.classList.add("is-leaving");
+    splash.classList.add("is-hidden");
+    document.body.classList.remove("splash-active");
+    window.setTimeout(() => {
+      splash.remove();
+    }, 600);
+  }, holdMs);
+}
+
+initSplashScreen();
+
 // ---------------------------------------------------------------------------
 // Language
 // ---------------------------------------------------------------------------
@@ -304,7 +334,6 @@ langToggle.addEventListener("click", () => {
   applyLanguage();
 });
 
-applyLanguage();
 setTimeout(() => {
   loadScreener();
 }, 150);
@@ -941,21 +970,35 @@ function technicalMomentumScore(data) {
     return { score: 0, label: t("technicalNeutral"), details: t("technicalNeutral") };
   }
   const rsi = Number(data.rsi);
-  const macd = Number(data.macd);
-  const signal = String(data.signal || "HOLD").toUpperCase();
+  const price = Number(data.current_price);
+  const macdHist = Number(data.macd_histogram);
+  const macdLine = Number(data.macd);
+  const macdSignal = Number(data.macd_signal);
+  const tradeSignal = String(data.signal || "HOLD").toUpperCase();
 
   const rsiNorm = Number.isFinite(rsi)
     ? Math.max(-1, Math.min(1, (50 - rsi) / 25))
     : 0;
-  const macdNorm = Number.isFinite(macd)
-    ? Math.max(-1, Math.min(1, macd * 3))
-    : 0;
-  const signalNorm = signal === "BUY" ? 1 : signal === "SELL" ? -1 : 0;
-  const score = (rsiNorm * 0.4) + (macdNorm * 0.35) + (signalNorm * 0.25);
 
-  if (score >= 0.2) return { score, label: t("technicalBullish"), details: `RSI ${rsi.toFixed(1)} | MACD ${macd.toFixed(2)}` };
-  if (score <= -0.2) return { score, label: t("technicalBearish"), details: `RSI ${rsi.toFixed(1)} | MACD ${macd.toFixed(2)}` };
-  return { score, label: t("technicalNeutral"), details: `RSI ${Number.isFinite(rsi) ? rsi.toFixed(1) : "-"} | MACD ${Number.isFinite(macd) ? macd.toFixed(2) : "-"}` };
+  let hist = macdHist;
+  if (!Number.isFinite(hist) && Number.isFinite(macdLine) && Number.isFinite(macdSignal)) {
+    hist = macdLine - macdSignal;
+  }
+  const macdNorm =
+    Number.isFinite(hist) && Number.isFinite(price) && price > 0
+      ? Math.max(-1, Math.min(1, (hist / price) * 400))
+      : 0;
+
+  const signalNorm = tradeSignal === "BUY" ? 1 : tradeSignal === "SELL" ? -1 : 0;
+  const score = rsiNorm * 0.35 + macdNorm * 0.4 + signalNorm * 0.25;
+
+  const rsiText = Number.isFinite(rsi) ? rsi.toFixed(1) : "-";
+  const histText = Number.isFinite(hist) ? hist.toFixed(4) : "-";
+  const details = `RSI ${rsiText} | MACD Hist ${histText} | ${tradeSignal}`;
+
+  if (score >= 0.15) return { score, label: t("technicalBullish"), details };
+  if (score <= -0.15) return { score, label: t("technicalBearish"), details };
+  return { score, label: t("technicalNeutral"), details };
 }
 
 function getFusionWeights() {
@@ -996,7 +1039,7 @@ function applyFusionSynthesis() {
 function synthesisFromScores(nlpScore, technicalScore) {
   const { sentiment: sw, technical: tw } = getFusionWeights();
   const value = ((nlpScore * sw) + (technicalScore * tw)) * 100;
-  if (value >= 25) {
+  if (value >= 20) {
     return {
       label: t("synthesisStrongBuy"),
       className: "bullish",
@@ -1004,7 +1047,7 @@ function synthesisFromScores(nlpScore, technicalScore) {
       barWidth: `${Math.min(100, Math.round(Math.abs(value)))}%`,
     };
   }
-  if (value <= -25) {
+  if (value <= -20) {
     return {
       label: t("synthesisStrongSell"),
       className: "bearish",

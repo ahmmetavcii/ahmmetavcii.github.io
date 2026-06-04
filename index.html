@@ -7,9 +7,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=6" />
+    <link rel="stylesheet" href="/styles.css?v=8" />
   </head>
-  <body>
+  <body class="splash-active">
+
+    <!-- ============ Splash intro ============ -->
+    <div id="splashScreen" class="splash-screen" role="dialog" aria-label="FinSense" aria-modal="true">
+      <div class="splash-glow" aria-hidden="true"></div>
+      <div class="splash-content">
+        <div class="splash-emblem" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="6" rx="1"/><rect x="12" y="9" width="3" height="10" rx="1"/><rect x="17" y="5" width="3" height="14" rx="1"/></svg>
+        </div>
+        <h1 class="splash-brand">FinSense</h1>
+        <p class="splash-tagline" data-i18n="splashTagline">One Clear Signal.</p>
+        <p class="splash-subtagline" data-i18n="splashSubtagline">FinSense for the best investing experience.</p>
+      </div>
+    </div>
 
     <!-- ============ App shell ============ -->
     <div id="appShell" class="shell">
@@ -34,16 +47,6 @@
           <button id="langToggle" class="btn-lang" type="button">EN</button>
         </div>
       </header>
-
-      <!-- HERO SLOGAN -->
-      <div style="text-align: center; padding: 35px 20px 15px; background: var(--bg);">
-        <h1 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; color: var(--text);">
-          One Clear Signal.
-        </h1>
-        <p style="color: var(--text-sec); font-size: 1.05rem; font-weight: 500;">
-          FinSense for the best investing experience.
-        </p>
-      </div>
 
       <!-- Master search -->
       <div class="master-search">
@@ -169,6 +172,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="/app.js?v=6"></script>
+    <script src="/app.js?v=8"></script>
   </body>
 </html>

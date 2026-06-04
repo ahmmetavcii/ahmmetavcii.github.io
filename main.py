@@ -800,6 +800,8 @@ def _analyze_single_ticker(ticker: str) -> dict:
         "current_price": round(price, 4),
         "rsi": round(rsi_val, 2),
         "macd": round(macd_val, 4),
+        "macd_signal": round(macd_sig, 4),
+        "macd_histogram": round(macd_val - macd_sig, 4),
         "signal": signal,
     }
 
