@@ -7,8 +7,8 @@
 // ---------------------------------------------------------------------------
 const I18N = {
   en: {
-    splashTagline: "One Clear Signal.",
-    splashSubtagline: "FinSense for the best investing experience.",
+    splashSubtagline: "Charts, news & AI signals",
+    topbarTagline: "Professional market intelligence",
     addBtn: "+ Add",
     addingBtn: "Adding\u2026",
     analyzeBtn: "Analyze",
@@ -35,9 +35,18 @@ const I18N = {
     chartRange3M: "3M",
     chartRange6M: "6M",
     chartPlaceholder: "Click an instrument to view its price chart.",
-    chartWelcomeTitle: "Markets at a glance",
-    chartWelcomeSub: "Pick a symbol below or search above — your chart loads automatically.",
-    chartFeaturedLabel: "Quick picks",
+    chartEmptyTitle: "Start with any ticker",
+    chartEmptySub: "Search above for charts, live news and unified AI signals.",
+    chartFeaturedLabel: "Popular symbols",
+    statAssets: "Tracked assets",
+    statMarkets: "Markets · US · BIST · Crypto",
+    statFusion: "News + technical fusion",
+    featureChartTitle: "Advanced charts",
+    featureChartDesc: "EMA, Bollinger Bands & multi-range views",
+    featureAiTitle: "AI unified signal",
+    featureAiDesc: "News sentiment blended with technical momentum",
+    featureScreenerTitle: "Strategy screener",
+    featureScreenerDesc: "Custom indicators across US, BIST & crypto",
     loadingChart: "Loading chart\u2026",
     chartUnavail: "Chart unavailable.",
     chartLoadErr: "Could not load chart data.",
@@ -106,10 +115,11 @@ const I18N = {
     screenerSelectedCount: "{n} of {t} selected",
     indicatorStoch: "Stochastic",
     scanMarketBtn: "Scan Market",
-    oversoldScore: "Opportunity Signal",
-    highBuyOpportunity: "High Buy Opportunity",
-    watchlistCandidate: "Watchlist Candidate",
-    defensiveSignal: "Defensive Signal",
+    oversoldScore: "Signal",
+    screenerStrongBuy: "Strong Buy",
+    screenerBuy: "Buy",
+    screenerStrongSell: "Strong Sell",
+    screenerSell: "Sell",
     lowestRSI: "Lowest RSI (14)",
     lowestMACD: "Lowest MACD",
     price: "Price",
@@ -126,8 +136,8 @@ const I18N = {
     badgeCrypto: "Crypto",
   },
   tr: {
-    splashTagline: "Tek Net Sinyal.",
-    splashSubtagline: "En iyi yat\u0131r\u0131m deneyimi i\u00e7in FinSense.",
+    splashSubtagline: "Grafik, haber ve AI sinyalleri",
+    topbarTagline: "Profesyonel piyasa analizi",
     addBtn: "+ Ekle",
     addingBtn: "Ekleniyor\u2026",
     analyzeBtn: "Analiz Et",
@@ -154,9 +164,18 @@ const I18N = {
     chartRange3M: "3A",
     chartRange6M: "6A",
     chartPlaceholder: "Grafik g\u00f6rmek i\u00e7in bir enstr\u00fcman se\u00e7in.",
-    chartWelcomeTitle: "Piyasalara genel bak\u0131\u015f",
-    chartWelcomeSub: "A\u015fa\u011f\u0131dan bir sembol se\u00e7in veya yukar\u0131dan aray\u0131n — grafik otomatik y\u00fcklenir.",
-    chartFeaturedLabel: "H\u0131zl\u0131 se\u00e7im",
+    chartEmptyTitle: "Bir sembolle baslayin",
+    chartEmptySub: "Grafik, canli haber ve birlesik AI sinyalleri icin yukaridan arayin.",
+    chartFeaturedLabel: "Populer semboller",
+    statAssets: "Takip edilen varlik",
+    statMarkets: "Piyasalar · ABD · BIST · Kripto",
+    statFusion: "Haber + teknik birlesim",
+    featureChartTitle: "Gelismis grafikler",
+    featureChartDesc: "EMA, Bollinger ve coklu zaman araligi",
+    featureAiTitle: "AI birlesik sinyal",
+    featureAiDesc: "Haber duyarliligi ve teknik momentum",
+    featureScreenerTitle: "Strateji tarayici",
+    featureScreenerDesc: "ABD, BIST ve kripto icin ozel indikatorler",
     loadingChart: "Grafik y\u00fckleniyor\u2026",
     chartUnavail: "Grafik kullan\u0131lam\u0131yor.",
     chartLoadErr: "Grafik verileri y\u00fcklenemedi.",
@@ -225,10 +244,11 @@ const I18N = {
     screenerSelectedCount: "{t} g\u00f6stergeden {n} se\u00e7ili",
     indicatorStoch: "Stokastik",
     scanMarketBtn: "Piyasay\u0131 Tara",
-    oversoldScore: "Firsat Sinyali",
-    highBuyOpportunity: "Yuksek Alim Firsati",
-    watchlistCandidate: "Izleme Listesi Adayi",
-    defensiveSignal: "Defansif Sinyal",
+    oversoldScore: "Sinyal",
+    screenerStrongBuy: "Guclu Al",
+    screenerBuy: "Al",
+    screenerStrongSell: "Guclu Sat",
+    screenerSell: "Sat",
     lowestRSI: "En D\u00fc\u015f\u00fck RSI (14)",
     lowestMACD: "En D\u00fc\u015f\u00fck MACD",
     price: "Fiyat",
@@ -304,6 +324,9 @@ const chartTitleEl = document.getElementById("chartTitle");
 const chartSubtitle = document.getElementById("chartSubtitle");
 const chartPlaceholder = document.getElementById("chartPlaceholder");
 const chartFeatured = document.getElementById("chartFeatured");
+const chartFeaturedEmpty = document.getElementById("chartFeaturedEmpty");
+const chartEmptyState = document.getElementById("chartEmptyState");
+const chartLoadingState = document.getElementById("chartLoadingState");
 const chartSparklines = document.getElementById("chartSparklines");
 const priceCanvas = document.getElementById("priceChart");
 const chartRange = document.getElementById("chartRange");
@@ -354,7 +377,6 @@ let lastFusionSliderValue = fusionSlider ? Number(fusionSlider.value) : 60;
 const CHART_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><polyline points="7 14 11 10 14 13 20 7"/></svg>';
 
-const DEFAULT_DASHBOARD_TICKER = "AAPL";
 const FEATURED_TICKERS = [
   { symbol: "AAPL", nameEn: "Apple", nameTr: "Apple" },
   { symbol: "NVDA", nameEn: "NVIDIA", nameTr: "NVIDIA" },
@@ -417,14 +439,14 @@ applyLanguage();
 function initSplashScreen() {
   const splash = document.getElementById("splashScreen");
   if (!splash) {
-    scheduleDashboardBootstrap();
+    initDashboardUI();
     return;
   }
 
   document.body.classList.add("splash-active");
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const holdMs = reducedMotion ? 700 : 2600;
+  const holdMs = reducedMotion ? 700 : 2200;
 
   window.setTimeout(() => {
     splash.classList.add("is-leaving");
@@ -432,18 +454,43 @@ function initSplashScreen() {
     document.body.classList.remove("splash-active");
     window.setTimeout(() => {
       splash.remove();
-      scheduleDashboardBootstrap();
+      initDashboardUI();
     }, 600);
   }, holdMs);
+}
+
+function showChartEmptyState() {
+  if (!chartPlaceholder) return;
+  chartPlaceholder.style.display = "grid";
+  chartPlaceholder.classList.remove("error");
+  if (chartEmptyState) chartEmptyState.classList.remove("hidden");
+  if (chartLoadingState) chartLoadingState.classList.add("hidden");
+  if (chartFeatured) chartFeatured.classList.add("hidden");
+  if (chartSparklines) chartSparklines.hidden = true;
+  priceCanvas.style.display = "none";
+  if (chartRange) chartRange.hidden = true;
+}
+
+function showChartLoadingState() {
+  if (!chartPlaceholder) return;
+  chartPlaceholder.style.display = "grid";
+  chartPlaceholder.classList.remove("error");
+  if (chartEmptyState) chartEmptyState.classList.add("hidden");
+  if (chartLoadingState) {
+    chartLoadingState.classList.remove("hidden");
+    const loadMsg = chartLoadingState.querySelector("p");
+    if (loadMsg) loadMsg.textContent = t("loadingData");
+  }
+  priceCanvas.style.display = "none";
 }
 
 function featuredTickerName(item) {
   return currentLang === "tr" ? item.nameTr : item.nameEn;
 }
 
-function buildChartFeaturedBar() {
-  if (!chartFeatured) return;
-  chartFeatured.innerHTML = `<span class="chart-featured-label">${t("chartFeaturedLabel")}</span>`;
+function buildFeaturedButtons(container) {
+  if (!container) return;
+  container.innerHTML = `<span class="chart-featured-label">${t("chartFeaturedLabel")}</span>`;
   const group = document.createElement("div");
   group.className = "chart-featured-group";
   group.setAttribute("role", "group");
@@ -464,30 +511,30 @@ function buildChartFeaturedBar() {
     group.appendChild(btn);
   });
 
-  chartFeatured.appendChild(group);
-  updateFeaturedTickerActive(lastChartTicker || DEFAULT_DASHBOARD_TICKER);
+  container.appendChild(group);
+}
+
+function buildChartFeaturedBar() {
+  buildFeaturedButtons(chartFeaturedEmpty);
+  buildFeaturedButtons(chartFeatured);
+  updateFeaturedTickerActive(lastChartTicker);
 }
 
 function updateFeaturedTickerActive(ticker) {
-  if (!chartFeatured) return;
   const sym = String(ticker || "").toUpperCase();
-  chartFeatured.querySelectorAll(".chart-featured-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.ticker === sym);
+  [chartFeatured, chartFeaturedEmpty].forEach((wrap) => {
+    if (!wrap) return;
+    wrap.querySelectorAll(".chart-featured-btn").forEach((btn) => {
+      btn.classList.toggle("active", sym && btn.dataset.ticker === sym);
+    });
   });
 }
 
-function scheduleDashboardBootstrap() {
+function initDashboardUI() {
   if (dashboardBootstrapped) return;
   dashboardBootstrapped = true;
   buildChartFeaturedBar();
-  bootstrapDashboard();
-}
-
-async function bootstrapDashboard() {
-  if (lastChartTicker) return;
-  tickerInput.value = DEFAULT_DASHBOARD_TICKER;
-  await analyzeTicker(DEFAULT_DASHBOARD_TICKER);
-  loadSparklinePreviews().catch(() => {});
+  showChartEmptyState();
 }
 
 initSplashScreen();
@@ -549,10 +596,7 @@ async function analyzeTicker(explicitTicker) {
   tickerInput.value = normalizedTicker;
   updateFeaturedTickerActive(normalizedTicker);
   setAnalyzing(true);
-  chartPlaceholder.textContent = t("loadingData");
-  chartPlaceholder.classList.remove("error");
-  chartPlaceholder.style.display = "grid";
-  priceCanvas.style.display = "none";
+  showChartLoadingState();
   newsSection.style.display = "block";
   newsList.innerHTML = `<span class="radar-loading">${t("newsLoading")}</span>`;
   setAiSentimentLoading();
@@ -1089,7 +1133,7 @@ async function loadChart(ticker, options = {}) {
               boxHeight: 2,
               padding: 12,
               usePointStyle: false,
-              font: { family: "Poppins", size: 10 },
+              font: { family: "Plus Jakarta Sans", size: 10 },
               color: c.tick,
               filter: (item) => !item.text.includes("BB "),
             },
@@ -1097,9 +1141,9 @@ async function loadChart(ticker, options = {}) {
           tooltip: {
             backgroundColor: c.tooltipBg,
             titleColor: c.text,
-            titleFont: { family: "Poppins", weight: "600", size: 13 },
+            titleFont: { family: "Plus Jakarta Sans", weight: "600", size: 13 },
             bodyColor: c.textSec,
-            bodyFont: { family: "Poppins", size: 12 },
+            bodyFont: { family: "Inter", size: 12 },
             borderColor: c.tooltipBorder,
             borderWidth: 1,
             cornerRadius: 10,
@@ -1121,14 +1165,14 @@ async function loadChart(ticker, options = {}) {
         },
         scales: {
           x: {
-            ticks: { color: c.tick, maxTicksLimit: 8, font: { family: "Poppins", size: 11 } },
+            ticks: { color: c.tick, maxTicksLimit: 8, font: { family: "Inter", size: 11 } },
             grid: { color: c.grid },
             border: { color: "transparent" },
           },
           y: {
             ticks: {
               color: c.tick,
-              font: { family: "Poppins", size: 11 },
+              font: { family: "Inter", size: 11 },
               callback: (v) => "$" + v.toLocaleString(),
             },
             grid: { color: c.grid },
@@ -1147,6 +1191,8 @@ async function loadChart(ticker, options = {}) {
     setChartRangeActive(chartPeriod);
     chartSubtitle.textContent = chartPeriodSubtitle(chartPeriod);
     await loadNews(ticker);
+    if (chartFeatured) chartFeatured.classList.remove("hidden");
+    await loadSparklinePreviews().catch(() => {});
     if (chartSparklines && sparklineCharts.length) {
       const previews = SPARKLINE_TICKERS.filter((tk) => tk !== ticker).slice(0, 4);
       chartSparklines.querySelectorAll(".sparkline-card").forEach((card) => {
@@ -1159,9 +1205,14 @@ async function loadChart(ticker, options = {}) {
     const msg = String(err && err.message ? err.message : "");
     const likelyInvalid = /not found|unavailable|invalid|404/i.test(msg);
     chartSubtitle.textContent = likelyInvalid ? t("tickerNotFound") : (msg || t("chartUnavail"));
-    chartPlaceholder.textContent = likelyInvalid ? t("tickerNotFound") : t("chartLoadErr");
-    chartPlaceholder.classList.add("error");
     chartPlaceholder.style.display = "grid";
+    chartPlaceholder.classList.add("error");
+    if (chartEmptyState) chartEmptyState.classList.add("hidden");
+    if (chartLoadingState) {
+      chartLoadingState.classList.remove("hidden");
+      const loadMsg = chartLoadingState.querySelector("p");
+      if (loadMsg) loadMsg.textContent = likelyInvalid ? t("tickerNotFound") : t("chartLoadErr");
+    }
     priceCanvas.style.display = "none";
     newsSection.style.display = "none";
     window.myChart = null;
@@ -1777,20 +1828,50 @@ function computeOpportunitySignal(item, indicators) {
     if (m.className === "bullish") bullish += 1;
     else if (m.className === "bearish") bearish += 1;
   });
-  if (!total) return { text: t("defensiveSignal"), className: "opp-low" };
 
-  const buyRatio = bullish / total;
-  const sellRatio = bearish / total;
-  if (buyRatio >= 0.5 && buyRatio > sellRatio) {
-    return { text: t("highBuyOpportunity"), className: "opp-high" };
+  if (!total) {
+    return screenerSignalFromTrade(item);
   }
-  if (sellRatio >= 0.5 && sellRatio > buyRatio) {
-    return { text: t("defensiveSignal"), className: "opp-low" };
+
+  if (bullish > bearish) {
+    const buyRatio = bullish / total;
+    if (buyRatio >= 0.5) {
+      return { text: t("screenerStrongBuy"), className: "opp-strong-buy" };
+    }
+    return { text: t("screenerBuy"), className: "opp-buy" };
   }
-  if (buyRatio >= 0.35 && buyRatio >= sellRatio) {
-    return { text: t("watchlistCandidate"), className: "opp-mid" };
+
+  if (bearish > bullish) {
+    const sellRatio = bearish / total;
+    if (sellRatio >= 0.5) {
+      return { text: t("screenerStrongSell"), className: "opp-strong-sell" };
+    }
+    return { text: t("screenerSell"), className: "opp-sell" };
   }
-  return { text: t("watchlistCandidate"), className: "opp-mid" };
+
+  // Equal bullish/bearish counts — lean on oversold rank or backend trade signal.
+  if (Number.isFinite(Number(item._score)) && Number(item._score) <= 0.45) {
+    return { text: t("screenerBuy"), className: "opp-buy" };
+  }
+  if (Number.isFinite(Number(item._score)) && Number(item._score) >= 0.55) {
+    return { text: t("screenerSell"), className: "opp-sell" };
+  }
+  return screenerSignalFromTrade(item);
+}
+
+function screenerSignalFromTrade(item) {
+  const sig = String(item.signal || "HOLD").toUpperCase();
+  if (sig === "BUY") {
+    return { text: t("screenerBuy"), className: "opp-buy" };
+  }
+  if (sig === "SELL") {
+    return { text: t("screenerSell"), className: "opp-sell" };
+  }
+  const score = Number(item._score);
+  if (Number.isFinite(score) && score <= 0.5) {
+    return { text: t("screenerBuy"), className: "opp-buy" };
+  }
+  return { text: t("screenerSell"), className: "opp-sell" };
 }
 
 function shortIndicatorLabel(indicatorId) {

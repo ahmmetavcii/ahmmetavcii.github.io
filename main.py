@@ -409,8 +409,40 @@ def _normalize_news_items(raw_news: list[object], limit: int = 7) -> list[dict]:
                 "time": formatted,
                 "url": link or "",
                 "link": link or "",
+                "source": "yfinance",
             })
     return items
+
+
+def _company_name_variants(name: str) -> list[str]:
+    """Generate matchable forms: full name, stripped suffix, primary token."""
+    raw = (name or "").strip()
+    if not raw:
+        return []
+    variants: list[str] = [raw]
+    stripped = re.sub(
+        r"\s+(Inc\.?|Corp\.?|Corporation|Ltd\.?|Limited|plc|N\.V\.|S\.A\.|Co\.?|Company|Holdings?|Group)\.?$",
+        "",
+        raw,
+        flags=re.IGNORECASE,
+    ).strip()
+    if stripped and stripped.lower() != raw.lower():
+        variants.append(stripped)
+    words = re.sub(r"[^\w\s]", " ", raw).split()
+    if words and len(words[0]) >= 4:
+        variants.append(words[0])
+    if len(words) >= 2 and len(words[0]) >= 2:
+        pair = f"{words[0]} {words[1]}"
+        if len(pair) >= 5:
+            variants.append(pair)
+    out: list[str] = []
+    seen: set[str] = set()
+    for v in variants:
+        key = v.lower()
+        if key not in seen and len(v) >= 3:
+            seen.add(key)
+            out.append(v)
+    return out
 
 
 def _news_company_names(resolved: str, tk: yf.Ticker) -> list[str]:
@@ -419,14 +451,14 @@ def _news_company_names(resolved: str, tk: yf.Ticker) -> list[str]:
     rup = resolved.upper().strip()
     for company, sym in BIST_MASTER_LIST.items():
         if sym.upper() == rup:
-            names.append(company)
+            names.extend(_company_name_variants(company))
     try:
         info = tk.info
         if isinstance(info, dict):
             for k in ("longName", "shortName", "displayName"):
                 v = info.get(k)
                 if isinstance(v, str) and 2 < len(v) < 220:
-                    names.append(v.strip())
+                    names.extend(_company_name_variants(v.strip()))
     except Exception:
         pass
     return list(dict.fromkeys(names))
@@ -436,6 +468,9 @@ def _symbol_search_tokens(resolved: str) -> list[str]:
     """Tokens that should match a headline for the given Yahoo symbol."""
     u = resolved.upper().strip()
     toks: set[str] = {u}
+    stem = u.split(".")[0]
+    if stem and stem != u:
+        toks.add(stem)
     if ".IS" in u:
         toks.add(u.replace(".IS", ""))
     if "-" in u:
@@ -448,6 +483,14 @@ def _symbol_search_tokens(resolved: str) -> list[str]:
             toks.update({"ETHEREUM", "ETH"})
         elif u.startswith("BNB"):
             toks.add("BINANCE")
+    alias_map = {
+        "GOOGL": {"GOOGLE", "GOOG", "ALPHABET"},
+        "GOOG": {"GOOGLE", "GOOGL", "ALPHABET"},
+        "META": {"FACEBOOK"},
+        "BRK-B": {"BERKSHIRE", "BERKSHIRE HATHAWAY"},
+        "BRK.B": {"BERKSHIRE", "BERKSHIRE HATHAWAY"},
+    }
+    toks.update(alias_map.get(u, set()))
     return sorted(toks, key=len, reverse=True)
 
 
@@ -481,11 +524,12 @@ def _text_mentions_symbol(text: str, resolved: str) -> bool:
 def _text_mentions_company_name(text: str, names: list[str]) -> bool:
     tl = text.lower()
     for name in names:
-        n = (name or "").strip()
-        if len(n) < 4:
-            continue
-        if n.lower() in tl:
-            return True
+        for variant in _company_name_variants(name):
+            v = variant.strip()
+            if len(v) < 3:
+                continue
+            if v.lower() in tl:
+                return True
     return False
 
 
@@ -499,8 +543,8 @@ def _is_noise_topic(text: str) -> bool:
 
 def filter_relevant_news(resolved: str, company_names: list[str], items: list[dict]) -> list[dict]:
     """
-    Drop items that do not mention the symbol/company or that look like entertainment/sports.
-    When only a long company name matches (no ticker), require a finance keyword.
+    Drop entertainment/sports noise. Yahoo Finance feed items are kept (already scoped to ticker).
+    Third-party items must mention the symbol or a company name variant.
     """
     out: list[dict] = []
     for it in items:
@@ -510,18 +554,28 @@ def filter_relevant_news(resolved: str, company_names: list[str], items: list[di
         if not blob:
             continue
 
-        sym_ok = _text_mentions_symbol(blob, resolved)
-        name_ok = _text_mentions_company_name(blob, company_names)
-        if not sym_ok and not name_ok:
-            continue
-
         if _is_noise_topic(blob):
             continue
 
-        if not sym_ok and name_ok and not _has_financial_context(blob):
+        if str(it.get("source") or "") == "yfinance":
+            out.append(it)
             continue
 
-        out.append(it)
+        sym_ok = _text_mentions_symbol(blob, resolved)
+        name_ok = _text_mentions_company_name(blob, company_names)
+        if sym_ok or name_ok:
+            out.append(it)
+
+    return out
+
+
+def _fallback_news_items(items: list[dict]) -> list[dict]:
+    """If strict filtering removes everything, keep non-noise headlines."""
+    out: list[dict] = []
+    for it in items:
+        blob = f"{it.get('title') or ''}\n{it.get('summary') or ''}".strip()
+        if blob and not _is_noise_topic(blob):
+            out.append(it)
     return out
 
 
@@ -539,35 +593,61 @@ def _merge_dedupe_news(primary: list[dict], secondary: list[dict]) -> list[dict]
     return out
 
 
-def _ddg_news_for_ticker(resolved: str, max_results: int = 12) -> list[dict]:
+def _ddg_news_for_ticker(
+    resolved: str,
+    company_names: list[str] | None = None,
+    max_results: int = 15,
+) -> list[dict]:
     """
-    Strict DuckDuckGo news query: symbol + finance terms; recent month; region by market.
+    DuckDuckGo news supplement: symbol + company name + finance terms.
     """
     u = resolved.upper().strip()
+    company_names = company_names or []
+    label = ""
+    for name in company_names:
+        variants = _company_name_variants(name)
+        if variants:
+            label = variants[0]
+            break
+
     if u.endswith(".IS"):
         stem = u.replace(".IS", "")
-        query = f"{stem} BIST borsa hisse yatirim"
+        query = f"{label or stem} {stem} BIST borsa hisse"
         region = "tr-tr"
     elif "-USD" in u or "-EUR" in u:
         base = u.split("-")[0]
-        query = f'"{resolved}" {base} crypto market price'
+        query = f'"{resolved}" {label or base} crypto'
         region = "us-en"
     else:
         stem = u.split(".")[0]
-        query = f'"{stem}" stock OR shares OR earnings OR revenue OR investor'
+        name_q = f'"{label}"' if label else ""
+        query = f"{name_q} {stem} stock OR earnings OR shares OR investor".strip()
         region = "us-en"
 
     items: list[dict] = []
+    rows: list[dict] = []
     try:
         with DDGS() as ddgs:
-            rows = list(
-                ddgs.news(
-                    keywords=query,
-                    region=region,
-                    timelimit="m",
-                    max_results=max_results,
-                )
-            )
+            for timelimit in ("m", "w", None):
+                try:
+                    rows = list(
+                        ddgs.news(
+                            keywords=query,
+                            region=region,
+                            timelimit=timelimit,
+                            max_results=max_results,
+                        )
+                    )
+                except TypeError:
+                    rows = list(
+                        ddgs.news(
+                            keywords=query,
+                            region=region,
+                            max_results=max_results,
+                        )
+                    )
+                if rows:
+                    break
     except Exception:
         return items
 
@@ -588,6 +668,7 @@ def _ddg_news_for_ticker(resolved: str, max_results: int = 12) -> list[dict]:
                 "time": formatted,
                 "url": link,
                 "link": link,
+                "source": "ddg",
             })
 
     return items
@@ -1007,17 +1088,16 @@ def ticker_news(ticker: str = Query(..., description="Ticker symbol")) -> JSONRe
         raw_news = getattr(obj, "news", None) or []
         yf_items = _normalize_news_items(raw_news, limit=25)
 
-        ddg_items: list[dict] = []
-        needs_ddg = not yf_items or requested.upper().endswith(".IS")
-        if needs_ddg:
-            ddg_items = _ddg_news_for_ticker(requested, max_results=14)
-        elif len(yf_items) < 4:
-            ddg_items = _ddg_news_for_ticker(requested, max_results=10)
-
+        ddg_items = _ddg_news_for_ticker(requested, company_names=company, max_results=15)
         merged = _merge_dedupe_news(yf_items, ddg_items)
-        filtered = filter_relevant_news(requested, company, merged)[:7]
+        filtered = filter_relevant_news(requested, company, merged)
 
-        if filtered:
+        if not filtered and merged:
+            filtered = _fallback_news_items(merged)
+
+        articles = filtered[:12]
+
+        if articles:
             news_status = "ok"
         elif merged:
             news_status = "no_relevant"
@@ -1028,7 +1108,7 @@ def ticker_news(ticker: str = Query(..., description="Ticker symbol")) -> JSONRe
             status_code=200,
             content={
                 "ticker": requested,
-                "articles": filtered,
+                "articles": articles,
                 "newsStatus": news_status,
             },
         )

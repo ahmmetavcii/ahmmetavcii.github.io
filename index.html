@@ -6,8 +6,8 @@
     <title>FinSense Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=15" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css?v=17" />
   </head>
   <body class="splash-active">
 
@@ -19,8 +19,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="6" rx="1"/><rect x="12" y="9" width="3" height="10" rx="1"/><rect x="17" y="5" width="3" height="14" rx="1"/></svg>
         </div>
         <h1 class="splash-brand">FinSense</h1>
-        <p class="splash-tagline" data-i18n="splashTagline">One Clear Signal.</p>
-        <p class="splash-subtagline" data-i18n="splashSubtagline">FinSense for the best investing experience.</p>
+        <p class="splash-subtagline" data-i18n="splashSubtagline">Charts, news &amp; AI signals</p>
       </div>
     </div>
 
@@ -29,10 +28,13 @@
 
       <!-- Top bar -->
       <header class="topbar">
-        <span class="topbar-brand">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="6" rx="1"/><rect x="12" y="9" width="3" height="10" rx="1"/><rect x="17" y="5" width="3" height="14" rx="1"/></svg>
-          FinSense
-        </span>
+        <div class="topbar-brand-wrap">
+          <span class="topbar-brand">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="6" rx="1"/><rect x="12" y="9" width="3" height="10" rx="1"/><rect x="17" y="5" width="3" height="14" rx="1"/></svg>
+            FinSense
+          </span>
+          <span class="topbar-tagline" data-i18n="topbarTagline">Professional market intelligence</span>
+        </div>
 
         <div class="topbar-right">
           <!-- Theme toggle -->
@@ -58,6 +60,21 @@
         <button id="scanBtn" class="btn-master-analyze" type="button" data-i18n="analyzeBtn">Analyze</button>
       </div>
 
+      <div class="platform-strip" aria-label="Platform highlights">
+        <div class="platform-stat">
+          <strong>50+</strong>
+          <span data-i18n="statAssets">Tracked assets</span>
+        </div>
+        <div class="platform-stat">
+          <strong>3</strong>
+          <span data-i18n="statMarkets">Markets · US · BIST · Crypto</span>
+        </div>
+        <div class="platform-stat">
+          <strong>AI</strong>
+          <span data-i18n="statFusion">News + technical fusion</span>
+        </div>
+      </div>
+
       <!-- Main body -->
       <div class="main-layout">
         <!-- Full-width content: chart + news + radar -->
@@ -77,12 +94,44 @@
               <span id="chartSubtitle" class="chart-subtitle" data-i18n="chartSubDefault">Last 3 months closing prices</span>
             </div>
           </div>
-          <div id="chartFeatured" class="chart-featured" aria-label="Featured instruments"></div>
+          <div id="chartFeatured" class="chart-featured hidden" aria-label="Featured instruments"></div>
           <div class="chart-area">
             <div id="chartPlaceholder" class="chart-placeholder">
-              <div class="chart-welcome">
-                <h3 class="chart-welcome-title" data-i18n="chartWelcomeTitle">Markets at a glance</h3>
-                <p class="chart-welcome-sub" data-i18n="chartWelcomeSub">Pick a symbol below or search above — your chart loads automatically.</p>
+              <div id="chartEmptyState" class="chart-empty-state">
+                <div class="chart-empty-visual" aria-hidden="true">
+                  <div class="chart-empty-grid"></div>
+                  <div class="chart-empty-line"></div>
+                </div>
+                <h2 class="chart-empty-title" data-i18n="chartEmptyTitle">Start with any ticker</h2>
+                <p class="chart-empty-sub" data-i18n="chartEmptySub">Search above for charts, live news and unified AI signals.</p>
+                <div class="platform-features">
+                  <div class="platform-feature">
+                    <span class="platform-feature-icon platform-feature-icon-chart" aria-hidden="true"></span>
+                    <div>
+                      <strong data-i18n="featureChartTitle">Advanced charts</strong>
+                      <p data-i18n="featureChartDesc">EMA, Bollinger Bands &amp; multi-range views</p>
+                    </div>
+                  </div>
+                  <div class="platform-feature">
+                    <span class="platform-feature-icon platform-feature-icon-ai" aria-hidden="true"></span>
+                    <div>
+                      <strong data-i18n="featureAiTitle">AI unified signal</strong>
+                      <p data-i18n="featureAiDesc">News sentiment blended with technical momentum</p>
+                    </div>
+                  </div>
+                  <div class="platform-feature">
+                    <span class="platform-feature-icon platform-feature-icon-scan" aria-hidden="true"></span>
+                    <div>
+                      <strong data-i18n="featureScreenerTitle">Strategy screener</strong>
+                      <p data-i18n="featureScreenerDesc">Custom indicators across US, BIST &amp; crypto</p>
+                    </div>
+                  </div>
+                </div>
+                <div id="chartFeaturedEmpty" class="chart-featured chart-featured--empty"></div>
+              </div>
+              <div id="chartLoadingState" class="chart-loading-state hidden">
+                <span class="chart-loading-spinner" aria-hidden="true"></span>
+                <p data-i18n="loadingData">Loading data...</p>
               </div>
             </div>
             <canvas id="priceChart" style="display:none"></canvas>
@@ -190,6 +239,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="/app.js?v=15"></script>
+    <script src="/app.js?v=17"></script>
   </body>
 </html>
