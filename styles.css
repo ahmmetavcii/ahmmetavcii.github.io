@@ -1717,6 +1717,51 @@ body.light-mode .ai-sentiment-card {
   margin-bottom: 8px;
 }
 
+.ai-sentiment-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ai-horizon-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--text-sec);
+  white-space: nowrap;
+  cursor: help;
+}
+
+.ai-horizon-badge.horizon-short {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.ai-horizon-badge.horizon-long {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.1);
+}
+
+.ai-horizon-badge.horizon-swing {
+  color: var(--accent);
+  border-color: rgba(29, 155, 255, 0.35);
+  background: var(--accent-dim);
+}
+
+.ai-synthesis-explain:empty,
+.ai-score-hint:empty {
+  display: none;
+}
+
 .ai-signal-breakdown {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -94,7 +94,15 @@ const I18N = {
     synthesisExplain:
       "Result: {verdict} ({score}). News: {nlp} ({newsW}% weight). Chart: {tech} ({techW}% weight).",
     synthesisStrongBuy: "Strong Buy",
+    synthesisBullish: "Bullish",
+    synthesisBearish: "Bearish",
     synthesisNeutral: "Neutral",
+    horizonShort: "Short-term",
+    horizonLong: "Long-term",
+    horizonSwing: "Medium-term",
+    horizonHintShort: "Days to weeks — momentum & news driven",
+    horizonHintLong: "Months+ — trend & moving-average alignment",
+    horizonHintSwing: "Weeks to months — blended timeframe",
     synthesisStrongSell: "Strong Sell",
     technicalBullish: "Bullish Momentum",
     technicalNeutral: "Neutral Momentum",
@@ -227,7 +235,15 @@ const I18N = {
     synthesisExplain:
       "Sonuc: {verdict} ({score}). Haber: {nlp} (%{newsW} agirlik). Grafik: {tech} (%{techW} agirlik).",
     synthesisStrongBuy: "Guclu Al",
+    synthesisBullish: "Yukselis",
+    synthesisBearish: "Dusus",
     synthesisNeutral: "Notr",
+    horizonShort: "Kisa vade",
+    horizonLong: "Uzun vade",
+    horizonSwing: "Orta vade",
+    horizonHintShort: "Gunler-haftalar — momentum ve haber odakli",
+    horizonHintLong: "Aylar+ — trend ve hareketli ortalama uyumu",
+    horizonHintSwing: "Haftalar-aylar — karisik zaman dilimi",
     synthesisStrongSell: "Guclu Sat",
     technicalBullish: "Yukselis Momentumu",
     technicalNeutral: "Notr Momentum",
@@ -346,6 +362,7 @@ const newsList = document.getElementById("newsList");
 const aiSentimentCard = document.getElementById("aiSentimentCard");
 const aiSentimentText = document.getElementById("aiSentimentText");
 const aiSentimentBadge = document.getElementById("aiSentimentBadge");
+const aiHorizonBadge = document.getElementById("aiHorizonBadge");
 const aiConfidenceValue = document.getElementById("aiConfidenceValue");
 const aiConfidenceBar = document.getElementById("aiConfidenceBar");
 const nlpChip = document.getElementById("nlpChip");
@@ -1257,6 +1274,10 @@ if (chartRange) {
     if (p === chartPeriod) return;
     chartPeriod = p;
     setChartRangeActive(p);
+    if (lastFusionContext) {
+      lastFusionContext.chartPeriod = p;
+      renderUnifiedSignal();
+    }
     if (lastChartTicker) {
       loadChart(lastChartTicker, { period: p });
     }
@@ -1282,6 +1303,11 @@ function setAiSentimentLoading() {
   setSignalChipTone(techChip, "neutral");
   if (fusionHint) fusionHint.textContent = "";
   if (aiSynthesisExplain) aiSynthesisExplain.textContent = "";
+  if (aiScoreHint) aiScoreHint.textContent = "";
+  if (aiHorizonBadge) {
+    aiHorizonBadge.classList.add("hidden");
+    aiHorizonBadge.setAttribute("aria-hidden", "true");
+  }
   aiSentimentText.textContent = t("aiAnalyzing");
 }
 
@@ -1341,11 +1367,10 @@ function nlpScoreFromVerdict(verdict, confidence) {
   return 0;
 }
 
-function labelFromVerdict(verdict, confidence) {
+function labelFromVerdict(verdict) {
   const v = String(verdict || "").toUpperCase();
-  const conf = Math.max(0, Math.min(100, Number(confidence) || 50));
-  if (v === "BULLISH") return `Bullish (${conf}%)`;
-  if (v === "BEARISH") return `Bearish (${conf}%)`;
+  if (v === "BULLISH") return t("synthesisBullish");
+  if (v === "BEARISH") return t("synthesisBearish");
   return t("synthesisNeutral");
 }
 
@@ -1439,17 +1464,46 @@ function buildScoreHint(synthesis) {
     .replace("{zone}", synthesis.zoneLabel);
 }
 
-function buildSynthesisExplain(ctx, synthesis, weights) {
-  const conflict = detectSignalConflict(ctx.nlpScore, ctx.technicalScore);
-  let text = t("synthesisExplain")
-    .replace("{verdict}", synthesis.label)
-    .replace("{score}", synthesis.scoreText)
-    .replace("{nlp}", ctx.nlpLabel)
-    .replace("{newsW}", String(weights.sentimentPct))
-    .replace("{tech}", ctx.technicalLabelText)
-    .replace("{techW}", String(weights.technicalPct));
-  if (conflict) text += ` ${t("fusionConflict")}`;
-  return text;
+function classifyTimeHorizon(ctx) {
+  const period = ctx.chartPeriod || chartPeriod || "3mo";
+  const rsi = Number(ctx.technicalData?.rsi);
+  const ema50 = Number(ctx.technicalData?.ema50_dist);
+  const weights = getFusionWeights();
+  let score = 0;
+
+  const periodScores = { "5d": -2, "1mo": -1, "3mo": 0, "6mo": 2 };
+  score += periodScores[period] ?? 0;
+
+  if (Number.isFinite(ema50)) {
+    if (ema50 >= 2) score += 1;
+    else if (ema50 <= -2) score -= 0.5;
+  }
+  if (Number.isFinite(rsi) && (rsi >= 68 || rsi <= 32)) score -= 1;
+  if (weights.sentimentPct >= 65) score -= 0.5;
+  if (weights.technicalPct >= 65 && (period === "6mo" || period === "3mo")) score += 0.5;
+
+  if (score <= -1) {
+    return { label: t("horizonShort"), hint: t("horizonHintShort"), className: "horizon-short" };
+  }
+  if (score >= 1) {
+    return { label: t("horizonLong"), hint: t("horizonHintLong"), className: "horizon-long" };
+  }
+  return { label: t("horizonSwing"), hint: t("horizonHintSwing"), className: "horizon-swing" };
+}
+
+function updateHorizonBadge(ctx) {
+  if (!aiHorizonBadge) return;
+  if (!ctx) {
+    aiHorizonBadge.classList.add("hidden");
+    aiHorizonBadge.setAttribute("aria-hidden", "true");
+    return;
+  }
+  const horizon = classifyTimeHorizon(ctx);
+  aiHorizonBadge.textContent = horizon.label;
+  aiHorizonBadge.title = horizon.hint;
+  aiHorizonBadge.className = `ai-horizon-badge ${horizon.className}`;
+  aiHorizonBadge.classList.remove("hidden");
+  aiHorizonBadge.setAttribute("aria-hidden", "false");
 }
 
 function updateFusionLabels() {
@@ -1486,11 +1540,12 @@ function renderUnifiedSignal() {
   setSignalChipTone(techChip, scoreToTone(ctx.technicalScore));
 
   updateFusionLabels();
+  updateHorizonBadge(ctx);
   if (aiScoreHint) {
-    aiScoreHint.textContent = `${buildScoreHint(synthesis)} · ${t("scoreZoneHint")}`;
+    aiScoreHint.textContent = conflict ? t("fusionConflict") : "";
   }
   if (aiSynthesisExplain) {
-    aiSynthesisExplain.textContent = buildSynthesisExplain(ctx, synthesis, weights);
+    aiSynthesisExplain.textContent = "";
   }
   aiSentimentText.textContent = ctx.analysis;
 }
@@ -1585,7 +1640,7 @@ async function loadAiSentiment(ticker, headlines, opts = {}) {
       const confidence = Number.isFinite(Number(data.confidence))
         ? Math.max(0, Math.min(100, Math.round(Number(data.confidence))))
         : extractConfidence(analysis);
-      nlpLabel = labelFromVerdict(verdict, confidence);
+      nlpLabel = labelFromVerdict(verdict);
       nlpScore = nlpScoreFromVerdict(verdict, confidence);
     } catch {
       nlpLabel = t("synthesisNeutral");
@@ -1597,19 +1652,21 @@ async function loadAiSentiment(ticker, headlines, opts = {}) {
   }
 
   let technical = { score: 0, label: t("technicalNeutral"), details: t("technicalNeutral") };
+  let technicalData = null;
   try {
-    const technicalData = await safeFetch(`/api/analyze?ticker=${encodeURIComponent(ticker)}`);
+    technicalData = await safeFetch(`/api/analyze?ticker=${encodeURIComponent(ticker)}`);
     technical = technicalMomentumScore(technicalData);
   } catch {
     technical = { score: 0, label: t("technicalNeutral"), details: t("technicalNeutral") };
   }
 
-  const synthesis = synthesisFromScores(nlpScore, technical.score);
   lastFusionContext = {
     nlpScore,
     technicalScore: technical.score,
     nlpLabel,
     technicalLabelText: technical.label,
+    technicalData,
+    chartPeriod,
     analysis,
     ticker,
     headlines: headlines.slice(),

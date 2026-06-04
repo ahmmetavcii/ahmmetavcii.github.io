@@ -899,6 +899,12 @@ def _analyze_single_ticker(ticker: str) -> dict:
         rsi_val, macd_val, macd_sig = _calculate_indicators(close)
         price = float(close.iloc[-1])
         signal = _generate_signal(rsi_val, macd_val, macd_sig)
+        ema20_ind = EMAIndicator(close=close, window=20)
+        ema50_ind = EMAIndicator(close=close, window=50)
+        e20 = float(ema20_ind.ema_indicator().iloc[-1])
+        e50 = float(ema50_ind.ema_indicator().iloc[-1])
+        ema20_dist = round((price - e20) / e20 * 100.0, 2) if e20 else None
+        ema50_dist = round((price - e50) / e50 * 100.0, 2) if e50 else None
     except ValueError as exc:
         raise ValueError(str(exc)) from exc
     except Exception as exc:
@@ -912,6 +918,8 @@ def _analyze_single_ticker(ticker: str) -> dict:
         "macd_signal": round(macd_sig, 4),
         "macd_histogram": round(macd_val - macd_sig, 4),
         "signal": signal,
+        "ema20_dist": ema20_dist,
+        "ema50_dist": ema50_dist,
     }
 
 
