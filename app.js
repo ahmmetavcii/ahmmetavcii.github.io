@@ -325,6 +325,8 @@ const chartSubtitle = document.getElementById("chartSubtitle");
 const chartPlaceholder = document.getElementById("chartPlaceholder");
 const chartFeatured = document.getElementById("chartFeatured");
 const chartFeaturedEmpty = document.getElementById("chartFeaturedEmpty");
+const emptyQuickPicks = document.getElementById("emptyQuickPicks");
+const chartAreaEl = document.querySelector(".chart-area");
 const chartEmptyState = document.getElementById("chartEmptyState");
 const chartLoadingState = document.getElementById("chartLoadingState");
 const chartSparklines = document.getElementById("chartSparklines");
@@ -461,18 +463,26 @@ function initSplashScreen() {
 
 function showChartEmptyState() {
   if (!chartPlaceholder) return;
-  chartPlaceholder.style.display = "grid";
+  chartPlaceholder.style.display = "block";
   chartPlaceholder.classList.remove("error");
+  if (chartAreaEl) chartAreaEl.classList.add("is-empty");
   if (chartEmptyState) chartEmptyState.classList.remove("hidden");
   if (chartLoadingState) chartLoadingState.classList.add("hidden");
   if (chartFeatured) chartFeatured.classList.add("hidden");
+  if (emptyQuickPicks) emptyQuickPicks.classList.remove("hidden");
   if (chartSparklines) chartSparklines.hidden = true;
   priceCanvas.style.display = "none";
   if (chartRange) chartRange.hidden = true;
 }
 
+function hideEmptyDashboardExtras() {
+  if (chartAreaEl) chartAreaEl.classList.remove("is-empty");
+  if (emptyQuickPicks) emptyQuickPicks.classList.add("hidden");
+}
+
 function showChartLoadingState() {
   if (!chartPlaceholder) return;
+  hideEmptyDashboardExtras();
   chartPlaceholder.style.display = "grid";
   chartPlaceholder.classList.remove("error");
   if (chartEmptyState) chartEmptyState.classList.add("hidden");
@@ -1021,6 +1031,7 @@ async function loadChart(ticker, options = {}) {
 
   chartTitleEl.innerHTML = CHART_ICON_SVG + " " + ticker;
   chartSubtitle.textContent = t("loadingChart");
+  hideEmptyDashboardExtras();
   chartPlaceholder.style.display = "none";
   chartPlaceholder.classList.remove("error");
   priceCanvas.style.display = "block";
@@ -1204,6 +1215,7 @@ async function loadChart(ticker, options = {}) {
   } catch (err) {
     const msg = String(err && err.message ? err.message : "");
     const likelyInvalid = /not found|unavailable|invalid|404/i.test(msg);
+    hideEmptyDashboardExtras();
     chartSubtitle.textContent = likelyInvalid ? t("tickerNotFound") : (msg || t("chartUnavail"));
     chartPlaceholder.style.display = "grid";
     chartPlaceholder.classList.add("error");

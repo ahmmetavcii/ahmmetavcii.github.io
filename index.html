@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=19" />
+    <link rel="stylesheet" href="/styles.css?v=20" />
   </head>
   <body class="splash-active">
 
@@ -127,7 +127,6 @@
                     </div>
                   </div>
                 </div>
-                <div id="chartFeaturedEmpty" class="chart-featured chart-featured--empty"></div>
               </div>
               <div id="chartLoadingState" class="chart-loading-state hidden">
                 <span class="chart-loading-spinner" aria-hidden="true"></span>
@@ -135,6 +134,9 @@
               </div>
             </div>
             <canvas id="priceChart" style="display:none"></canvas>
+          </div>
+          <div id="emptyQuickPicks" class="empty-quick-picks">
+            <div id="chartFeaturedEmpty" class="chart-featured chart-featured--empty" aria-label="Popular symbols"></div>
           </div>
           <div id="chartSparklines" class="chart-sparklines" hidden></div>
 
@@ -239,6 +241,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="/app.js?v=19"></script>
+    <script src="/app.js?v=20"></script>
   </body>
 </html>
