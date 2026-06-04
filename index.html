@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=21" />
+    <link rel="stylesheet" href="/styles.css?v=22" />
   </head>
   <body class="splash-active">
 
@@ -97,37 +97,6 @@
           <div id="chartFeatured" class="chart-featured hidden" aria-label="Featured instruments"></div>
           <div class="chart-area">
             <div id="chartPlaceholder" class="chart-placeholder">
-              <div id="chartEmptyState" class="chart-empty-state">
-                <div class="chart-empty-visual" aria-hidden="true">
-                  <div class="chart-empty-grid"></div>
-                  <div class="chart-empty-line"></div>
-                </div>
-                <h2 class="chart-empty-title" data-i18n="chartEmptyTitle">Start with any ticker</h2>
-                <p class="chart-empty-sub" data-i18n="chartEmptySub">Search above for charts, live news and unified AI signals.</p>
-                <div class="platform-features">
-                  <div class="platform-feature">
-                    <span class="platform-feature-icon platform-feature-icon-chart" aria-hidden="true"></span>
-                    <div>
-                      <strong data-i18n="featureChartTitle">Advanced charts</strong>
-                      <p data-i18n="featureChartDesc">EMA, Bollinger Bands &amp; multi-range views</p>
-                    </div>
-                  </div>
-                  <div class="platform-feature">
-                    <span class="platform-feature-icon platform-feature-icon-ai" aria-hidden="true"></span>
-                    <div>
-                      <strong data-i18n="featureAiTitle">AI unified signal</strong>
-                      <p data-i18n="featureAiDesc">News sentiment blended with technical momentum</p>
-                    </div>
-                  </div>
-                  <div class="platform-feature">
-                    <span class="platform-feature-icon platform-feature-icon-scan" aria-hidden="true"></span>
-                    <div>
-                      <strong data-i18n="featureScreenerTitle">Strategy screener</strong>
-                      <p data-i18n="featureScreenerDesc">Custom indicators across US, BIST &amp; crypto</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
               <div id="chartLoadingState" class="chart-loading-state hidden">
                 <span class="chart-loading-spinner" aria-hidden="true"></span>
                 <p data-i18n="loadingData">Loading data...</p>
@@ -136,6 +105,37 @@
             <canvas id="priceChart" style="display:none"></canvas>
           </div>
           <div id="emptyQuickPicks" class="empty-quick-picks">
+            <div id="chartEmptyState" class="chart-empty-state">
+              <div class="chart-empty-visual" aria-hidden="true">
+                <div class="chart-empty-grid"></div>
+                <div class="chart-empty-line"></div>
+              </div>
+              <h2 class="chart-empty-title" data-i18n="chartEmptyTitle">Start with any ticker</h2>
+              <p class="chart-empty-sub" data-i18n="chartEmptySub">Search above for charts, live news and unified AI signals.</p>
+              <div class="platform-features">
+                <div class="platform-feature">
+                  <span class="platform-feature-icon platform-feature-icon-chart" aria-hidden="true"></span>
+                  <div>
+                    <strong data-i18n="featureChartTitle">Advanced charts</strong>
+                    <p data-i18n="featureChartDesc">EMA, Bollinger Bands &amp; multi-range views</p>
+                  </div>
+                </div>
+                <div class="platform-feature">
+                  <span class="platform-feature-icon platform-feature-icon-ai" aria-hidden="true"></span>
+                  <div>
+                    <strong data-i18n="featureAiTitle">AI unified signal</strong>
+                    <p data-i18n="featureAiDesc">News sentiment blended with technical momentum</p>
+                  </div>
+                </div>
+                <div class="platform-feature">
+                  <span class="platform-feature-icon platform-feature-icon-scan" aria-hidden="true"></span>
+                  <div>
+                    <strong data-i18n="featureScreenerTitle">Strategy screener</strong>
+                    <p data-i18n="featureScreenerDesc">Custom indicators across US, BIST &amp; crypto</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div id="chartFeaturedEmpty" class="chart-featured chart-featured--empty" aria-label="Popular symbols"></div>
           </div>
           <div id="chartSparklines" class="chart-sparklines" hidden></div>
@@ -241,6 +241,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="/app.js?v=21"></script>
+    <script src="/app.js?v=22"></script>
   </body>
 </html>

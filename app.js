@@ -327,6 +327,7 @@ const chartFeatured = document.getElementById("chartFeatured");
 const chartFeaturedEmpty = document.getElementById("chartFeaturedEmpty");
 const emptyQuickPicks = document.getElementById("emptyQuickPicks");
 const chartAreaEl = document.querySelector(".chart-area");
+const rightColEl = document.querySelector(".right-col");
 const chartEmptyState = document.getElementById("chartEmptyState");
 const chartLoadingState = document.getElementById("chartLoadingState");
 const chartSparklines = document.getElementById("chartSparklines");
@@ -463,9 +464,10 @@ function initSplashScreen() {
 
 function showChartEmptyState() {
   if (!chartPlaceholder) return;
-  chartPlaceholder.style.display = "";
+  chartPlaceholder.style.display = "none";
   chartPlaceholder.classList.remove("error");
   if (chartAreaEl) chartAreaEl.classList.add("is-empty");
+  if (rightColEl) rightColEl.classList.add("is-dashboard-empty");
   if (chartEmptyState) chartEmptyState.classList.remove("hidden");
   if (chartLoadingState) chartLoadingState.classList.add("hidden");
   if (chartFeatured) chartFeatured.classList.add("hidden");
@@ -477,6 +479,7 @@ function showChartEmptyState() {
 
 function hideEmptyDashboardExtras() {
   if (chartAreaEl) chartAreaEl.classList.remove("is-empty");
+  if (rightColEl) rightColEl.classList.remove("is-dashboard-empty");
   if (emptyQuickPicks) emptyQuickPicks.classList.add("hidden");
 }
 
