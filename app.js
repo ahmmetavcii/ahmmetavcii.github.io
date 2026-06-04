@@ -1424,16 +1424,49 @@ function indicatorInterpretation(indicator, rawValue) {
   return { label: t("indicatorBalanced"), className: "neutral" };
 }
 
-function opportunityLabel(score) {
-  if (score <= 0.22) return { text: t("highBuyOpportunity"), className: "opp-high" };
-  if (score <= 0.45) return { text: t("watchlistCandidate"), className: "opp-mid" };
-  return { text: t("defensiveSignal"), className: "opp-low" };
+const SCREENER_RESULTS_MAX = 12;
+const SCREENER_METRICS_ON_CARD = 3;
+
+function computeOpportunitySignal(item, indicators) {
+  let bullish = 0;
+  let bearish = 0;
+  let total = 0;
+  indicators.forEach((ind) => {
+    const raw = item[ind];
+    if (!Number.isFinite(Number(raw))) return;
+    total += 1;
+    const m = indicatorInterpretation(ind, raw);
+    if (m.className === "bullish") bullish += 1;
+    else if (m.className === "bearish") bearish += 1;
+  });
+  if (!total) return { text: t("defensiveSignal"), className: "opp-low" };
+
+  const buyRatio = bullish / total;
+  const sellRatio = bearish / total;
+  if (buyRatio >= 0.5 && buyRatio > sellRatio) {
+    return { text: t("highBuyOpportunity"), className: "opp-high" };
+  }
+  if (sellRatio >= 0.5 && sellRatio > buyRatio) {
+    return { text: t("defensiveSignal"), className: "opp-low" };
+  }
+  if (buyRatio >= 0.35 && buyRatio >= sellRatio) {
+    return { text: t("watchlistCandidate"), className: "opp-mid" };
+  }
+  return { text: t("watchlistCandidate"), className: "opp-mid" };
 }
 
-function oversoldScoreItems(items, indicators) {
+function shortIndicatorLabel(indicatorId) {
+  const name = getIndicatorLabel(indicatorId);
+  const head = name.split("(")[0].trim();
+  if (head.length <= 8) return head;
+  return head.slice(0, 7) + "…";
+}
+
+function oversoldScoreItems(items, indicators, rankPool) {
+  const pool = rankPool && rankPool.length ? rankPool : items;
   const rankMaps = {};
   indicators.forEach((ind) => {
-    const sorted = [...items]
+    const sorted = [...pool]
       .filter((x) => Number.isFinite(Number(x[ind])))
       .sort((a, b) => Number(a[ind]) - Number(b[ind]));
     rankMaps[ind] = new Map();
@@ -1468,26 +1501,37 @@ function renderScreenerResults(items, indicators) {
     return;
   }
 
-  items.slice(0, 5).forEach((item, i) => {
+  const shown = items.slice(0, SCREENER_RESULTS_MAX);
+  const extraCount = indicators.length - SCREENER_METRICS_ON_CARD;
+
+  shown.forEach((item, i) => {
     const el = document.createElement("div");
     el.className = "screener-result-card";
-    el.style.animationDelay = `${i * 0.05}s`;
-    const metrics = indicators
+    el.style.animationDelay = `${i * 0.03}s`;
+    const visibleIndicators = indicators.slice(0, SCREENER_METRICS_ON_CARD);
+    const metrics = visibleIndicators
       .map((ind) => {
-        const label = getIndicatorLabel(ind);
+        const label = shortIndicatorLabel(ind);
         const val = formatIndicatorValue(ind, item[ind]);
         const meaning = indicatorInterpretation(ind, item[ind]);
-        return `<span class="screener-metric"><b>${label}</b> ${val}<span class="metric-badge ${meaning.className}">${meaning.label}</span></span>`;
+        return `<span class="screener-metric" title="${getIndicatorLabel(ind)} ${val} — ${meaning.label}"><b>${label}</b> ${val}<span class="metric-badge ${meaning.className}">${meaning.label}</span></span>`;
       })
       .join("");
-    const opportunity = opportunityLabel(Number(item._score));
+    const moreMetrics =
+      extraCount > 0
+        ? `<span class="screener-metric screener-metric-more">+${extraCount}</span>`
+        : "";
+    const opportunity = computeOpportunitySignal(item, indicators);
+    const price = Number(item.current_price || 0);
+    const priceText = Number.isFinite(price) ? price.toFixed(price >= 100 ? 2 : 4) : "-";
+    const currency = String(item.market || "").toUpperCase() === "BIST" ? "₺" : "$";
 
     el.innerHTML = `
       <div class="screener-result-head">
         <span class="screener-result-ticker">${item.ticker} ${marketBadgeHTML(item.market)}</span>
-        <span class="screener-result-price">$${Number(item.current_price || 0).toFixed(2)}</span>
+        <span class="screener-result-price">${currency}${priceText}</span>
       </div>
-      <div class="screener-result-metrics">${metrics}</div>
+      <div class="screener-result-metrics">${metrics}${moreMetrics}</div>
       <div class="screener-result-score ${opportunity.className}">${t("oversoldScore")}: ${opportunity.text}</div>
     `;
     el.addEventListener("click", () => {
@@ -1509,9 +1553,13 @@ function runScreenerScan() {
   const filtered = screenerMarket === "all"
     ? [...screenerData]
     : screenerData.filter((item) => String(item.market || "").toUpperCase() === screenerMarket);
-  const ranked = oversoldScoreItems(filtered, indicators);
+  const ranked = oversoldScoreItems(filtered, indicators, screenerData);
   renderScreenerResults(ranked, indicators);
-  radarStatus.textContent = `${ranked.length} ${t("radarUpdated")}`;
+  const shown = Math.min(ranked.length, SCREENER_RESULTS_MAX);
+  radarStatus.textContent =
+    ranked.length > shown
+      ? `${shown} / ${ranked.length} ${t("radarUpdated")}`
+      : `${ranked.length} ${t("radarUpdated")}`;
 }
 
 function screenerStatusError(msg) {
@@ -1522,6 +1570,7 @@ screenerMarketSelector.addEventListener("click", (e) => {
   const btn = e.target.closest(".screener-chip");
   if (!btn) return;
   setScreenerMarket(btn.dataset.market);
+  if (screenerData.length) runScreenerScan();
 });
 
 screenerScanBtn.addEventListener("click", runScreenerScan);
