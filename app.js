@@ -66,6 +66,9 @@ const I18N = {
     aiConfidence: "Synthesis Score",
     aiAnalyzing: "AI is analyzing the news...",
     aiUnavailable: "AI analysis is currently unavailable.",
+    aiMissingKey:
+      "Gemini API key is not configured on the server. Add GEMINI_API_KEY in Render environment variables.",
+    aiQuotaExceeded: "Gemini API quota exceeded. Try again later or check your Google AI billing.",
     aiNoHeadlines: "No headlines available for AI analysis.",
     aiNoRelevantHeadlines:
       "Headlines were filtered for relevance; AI summary is based on technicals only.",
@@ -195,6 +198,10 @@ const I18N = {
     aiConfidence: "Sentez Skoru",
     aiAnalyzing: "AI haberleri analiz ediyor...",
     aiUnavailable: "AI analizi \u015fu anda kullan\u0131lam\u0131yor.",
+    aiMissingKey:
+      "Sunucuda Gemini API anahtar\u0131 tan\u0131ml\u0131 de\u011fil. Render ortam de\u011fi\u015fkenlerine GEMINI_API_KEY ekleyin.",
+    aiQuotaExceeded:
+      "Gemini API kotas\u0131 doldu. Bir s\u00fcre sonra tekrar deneyin veya Google AI faturaland\u0131rmas\u0131n\u0131 kontrol edin.",
     aiNoHeadlines: "AI analizi i\u00e7in ba\u015fl\u0131k bulunamad\u0131.",
     aiNoRelevantHeadlines:
       "Haberler ilgi filtresinden ge\u00e7medi; \u00f6zet teknik g\u00f6stergelere dayan\u0131yor.",
@@ -1550,6 +1557,13 @@ function synthesisFromScores(nlpScore, technicalScore) {
   };
 }
 
+function aiAnalysisMessage(data, fallback) {
+  const err = String(data?.aiError || "").toLowerCase();
+  if (err === "missing_key") return t("aiMissingKey");
+  if (err === "quota") return t("aiQuotaExceeded");
+  return fallback;
+}
+
 async function loadAiSentiment(ticker, headlines, opts = {}) {
   let nlpLabel = t("synthesisNeutral");
   let nlpScore = 0;
@@ -1566,7 +1580,7 @@ async function loadAiSentiment(ticker, headlines, opts = {}) {
           language: currentLang,
         }),
       });
-      analysis = String(data.analysis || "").trim() || t("aiUnavailable");
+      analysis = aiAnalysisMessage(data, String(data.analysis || "").trim() || t("aiUnavailable"));
       const verdict = String(data.verdict || extractVerdict(analysis)).toUpperCase();
       const confidence = Number.isFinite(Number(data.confidence))
         ? Math.max(0, Math.min(100, Math.round(Number(data.confidence))))

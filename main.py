@@ -1207,12 +1207,23 @@ def ai_analyze_news(payload: NewsAIAnalyzeRequest = Body(...)) -> JSONResponse:
         })
     except ValueError:
         return JSONResponse(status_code=404, content={"error": "Ticker not found"})
-    except Exception:
+    except Exception as exc:
+        err = str(exc).lower()
+        if "gemini_api_key" in err or "missing" in err and "key" in err:
+            ai_error = "missing_key"
+        elif genai is None or "sdk" in err:
+            ai_error = "no_sdk"
+        elif "quota" in err or "429" in err or "rate" in err:
+            ai_error = "quota"
+        else:
+            ai_error = "api_failed"
+        print(f"[ai_analyze_news] {payload.ticker}: {exc}")
         return JSONResponse(status_code=200, content={
             "ticker": payload.ticker,
             "analysis": "AI analysis is currently unavailable.",
             "verdict": "NEUTRAL",
             "confidence": 50,
+            "aiError": ai_error,
         })
 
 
