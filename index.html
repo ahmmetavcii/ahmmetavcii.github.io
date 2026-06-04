@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=10" />
+    <link rel="stylesheet" href="/styles.css?v=12" />
   </head>
   <body class="splash-active">
 
@@ -115,7 +115,10 @@
                   <span id="sentimentLabel" class="sentiment-label">Sentiment (AI): 60%</span>
                   <span id="technicalLabel" class="technical-label">Technical (Math): 40%</span>
                 </div>
-                <input type="range" id="fusionSlider" min="0" max="100" value="60" aria-label="Strategy weight: Sentiment vs Technical" />
+                <div class="fusion-slider-row">
+                  <input type="range" id="fusionSlider" min="0" max="100" value="60" aria-label="Strategy weight: Sentiment vs Technical" />
+                  <button type="button" id="fusionApplyBtn" class="btn-fusion-apply hidden" data-i18n="fusionApplyBtn">Apply</button>
+                </div>
               </div>
               <div class="ai-confidence-row">
                 <span class="ai-confidence-label" data-i18n="aiConfidence">Synthesis Score</span>
@@ -150,11 +153,14 @@
                 <button class="screener-chip" data-market="CRYPTO" data-i18n="radarFilterCrypto">Crypto</button>
               </div>
 
-              <div class="screener-indicator-selector" id="screenerIndicatorSelector">
-                <label class="screener-indicator-pill"><input type="checkbox" value="rsi" checked /><span>RSI</span></label>
-                <label class="screener-indicator-pill"><input type="checkbox" value="macd" checked /><span>MACD</span></label>
-                <label class="screener-indicator-pill"><input type="checkbox" value="stoch_k" checked /><span data-i18n="indicatorStoch">Stochastic</span></label>
-                <label class="screener-indicator-pill"><input type="checkbox" value="mfi" checked /><span>MFI</span></label>
+              <div class="screener-indicator-block">
+                <div class="screener-indicator-toolbar">
+                  <span class="screener-indicator-toolbar-label" data-i18n="screenerIndicatorsLabel">Indicators</span>
+                  <span id="screenerIndicatorCount" class="screener-indicator-count">4 selected</span>
+                  <button type="button" id="screenerSelectAllBtn" class="btn-screener-link" data-i18n="screenerSelectAll">Select all</button>
+                  <button type="button" id="screenerClearAllBtn" class="btn-screener-link" data-i18n="screenerClearAll">Clear</button>
+                </div>
+                <div id="screenerIndicatorSelector" class="screener-indicator-list" role="group" aria-label="Technical indicators"></div>
               </div>
 
               <button id="screenerScanBtn" class="btn-screener-scan" type="button" data-i18n="scanMarketBtn">Scan Market</button>
@@ -170,6 +176,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="/app.js?v=9"></script>
+    <script src="/app.js?v=12"></script>
   </body>
 </html>

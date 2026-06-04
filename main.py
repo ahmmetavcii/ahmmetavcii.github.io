@@ -14,9 +14,9 @@ from dotenv import load_dotenv
 from fastapi import Body, FastAPI, Query
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
-from ta.momentum import RSIIndicator, StochasticOscillator
-from ta.trend import EMAIndicator, MACD
-from ta.volatility import BollingerBands
+from ta.momentum import ROCIndicator, RSIIndicator, StochasticOscillator, WilliamsRIndicator
+from ta.trend import ADXIndicator, CCIIndicator, EMAIndicator, MACD
+from ta.volatility import AverageTrueRange, BollingerBands
 from ta.volume import MFIIndicator
 
 try:
@@ -738,47 +738,74 @@ def _market_category(ticker: str) -> str:
     return "US"
 
 
-def _calculate_screener_indicators(
+def _series_last(value) -> float | None:
+    if value is None:
+        return None
+    series = pd.to_numeric(value, errors="coerce").dropna()
+    if series.empty:
+        return None
+    last = float(series.iloc[-1])
+    if last != last:  # NaN
+        return None
+    return last
+
+
+def _compute_screener_indicator_pack(
     close: pd.Series,
     high: pd.Series,
     low: pd.Series,
     volume: pd.Series,
-) -> tuple[float, float, float, float, float]:
-    """
-    Return RSI, MACD, Stoch_k, MFI, MACD signal.
-    """
-    try:
-        import pandas_ta as pta  # type: ignore
+) -> dict[str, float]:
+    """Compute extended technical indicators for the market screener."""
+    price = float(close.iloc[-1])
+    rsi_ind = RSIIndicator(close=close, window=14)
+    macd_ind = MACD(close=close)
+    stoch_ind = StochasticOscillator(high=high, low=low, close=close, window=14, smooth_window=3)
+    mfi_ind = MFIIndicator(high=high, low=low, close=close, volume=volume, window=14)
+    bb_ind = BollingerBands(close=close, window=20, window_dev=2)
+    ema20_ind = EMAIndicator(close=close, window=20)
+    ema50_ind = EMAIndicator(close=close, window=50)
+    cci_ind = CCIIndicator(high=high, low=low, close=close, window=20)
+    adx_ind = ADXIndicator(high=high, low=low, close=close, window=14)
+    wr_ind = WilliamsRIndicator(high=high, low=low, close=close, lbp=14)
+    roc_ind = ROCIndicator(close=close, window=12)
+    atr_ind = AverageTrueRange(high=high, low=low, close=close, window=14)
 
-        rsi_s = pta.rsi(close, length=14)
-        macd_df = pta.macd(close, fast=12, slow=26, signal=9)
-        stoch_df = pta.stoch(high=high, low=low, close=close, k=14, d=3, smooth_k=3)
-        mfi_s = pta.mfi(high=high, low=low, close=close, volume=volume, length=14)
+    macd_v = _series_last(macd_ind.macd())
+    macd_sig = _series_last(macd_ind.macd_signal())
+    bb_upper = _series_last(bb_ind.bollinger_hband())
+    bb_lower = _series_last(bb_ind.bollinger_lband())
+    ema20 = _series_last(ema20_ind.ema_indicator())
+    ema50 = _series_last(ema50_ind.ema_indicator())
+    atr_v = _series_last(atr_ind.average_true_range())
 
-        if rsi_s is None or macd_df is None or macd_df.empty or stoch_df is None or stoch_df.empty or mfi_s is None:
-            raise ValueError()
+    pct_b = None
+    if bb_upper is not None and bb_lower is not None and bb_upper > bb_lower:
+        pct_b = (price - bb_lower) / (bb_upper - bb_lower) * 100.0
 
-        macd_col = next((c for c in macd_df.columns if str(c).startswith("MACD_")), None)
-        sig_col = next((c for c in macd_df.columns if str(c).startswith("MACDs_")), None)
-        stoch_k_col = next((c for c in stoch_df.columns if str(c).startswith("STOCHk_")), None)
-        if not macd_col or not sig_col or not stoch_k_col:
-            raise ValueError()
+    def ema_distance_pct(ema_val: float | None) -> float | None:
+        if ema_val is None or ema_val == 0:
+            return None
+        return (price - ema_val) / ema_val * 100.0
 
-        rsi_val = float(pd.to_numeric(rsi_s, errors="coerce").dropna().iloc[-1])
-        macd_val = float(pd.to_numeric(macd_df[macd_col], errors="coerce").dropna().iloc[-1])
-        macd_sig = float(pd.to_numeric(macd_df[sig_col], errors="coerce").dropna().iloc[-1])
-        stoch_k = float(pd.to_numeric(stoch_df[stoch_k_col], errors="coerce").dropna().iloc[-1])
-        mfi_val = float(pd.to_numeric(mfi_s, errors="coerce").dropna().iloc[-1])
-        return rsi_val, macd_val, stoch_k, mfi_val, macd_sig
-    except Exception:
-        rsi_val, macd_val, macd_sig = _calculate_indicators(close)
-        stoch_ind = StochasticOscillator(high=high, low=low, close=close, window=14, smooth_window=3)
-        mfi_ind = MFIIndicator(high=high, low=low, close=close, volume=volume, window=14)
-        stoch_s = pd.to_numeric(stoch_ind.stoch(), errors="coerce").dropna()
-        mfi_s = pd.to_numeric(mfi_ind.money_flow_index(), errors="coerce").dropna()
-        if stoch_s.empty or mfi_s.empty:
-            raise ValueError("Stochastic/MFI values are unavailable.")
-        return rsi_val, macd_val, float(stoch_s.iloc[-1]), float(mfi_s.iloc[-1]), macd_sig
+    raw: dict[str, float | None] = {
+        "rsi": _series_last(rsi_ind.rsi()),
+        "macd": macd_v,
+        "macd_hist": (macd_v - macd_sig) if macd_v is not None and macd_sig is not None else None,
+        "macd_signal": macd_sig,
+        "stoch_k": _series_last(stoch_ind.stoch()),
+        "stoch_d": _series_last(stoch_ind.stoch_signal()),
+        "mfi": _series_last(mfi_ind.money_flow_index()),
+        "cci": _series_last(cci_ind.cci()),
+        "williams_r": _series_last(wr_ind.williams_r()),
+        "adx": _series_last(adx_ind.adx()),
+        "roc": _series_last(roc_ind.roc()),
+        "bb_pct_b": pct_b,
+        "atr_pct": (atr_v / price * 100.0) if atr_v is not None and price > 0 else None,
+        "ema20_dist": ema_distance_pct(ema20),
+        "ema50_dist": ema_distance_pct(ema50),
+    }
+    return {key: float(val) for key, val in raw.items() if val is not None}
 
 
 def _analyze_single_ticker(ticker: str) -> dict:
@@ -945,18 +972,25 @@ def _screener_worker(ticker: str) -> dict | None:
         low = low.iloc[-min_len:]
         volume = volume.iloc[-min_len:]
 
-        rsi_val, macd_val, stoch_k, mfi_val, macd_sig = _calculate_screener_indicators(close, high, low, volume)
-        signal = _generate_signal(rsi_val, macd_val, macd_sig)
-        return {
+        pack = _compute_screener_indicator_pack(close, high, low, volume)
+        if "rsi" not in pack:
+            return None
+        macd_val = pack.get("macd", 0.0)
+        macd_sig = pack.get("macd_signal", macd_val)
+        signal = _generate_signal(pack["rsi"], macd_val, macd_sig)
+
+        four_dec = {"macd", "macd_hist", "macd_signal"}
+        row: dict = {
             "ticker": normalized,
             "market": _market_category(normalized),
             "current_price": round(float(close.iloc[-1]), 4),
-            "rsi": round(rsi_val, 2),
-            "macd": round(macd_val, 4),
-            "stoch_k": round(stoch_k, 2),
-            "mfi": round(mfi_val, 2),
             "signal": signal,
         }
+        for key, val in pack.items():
+            if key == "macd_signal":
+                continue
+            row[key] = round(val, 4 if key in four_dec else 2)
+        return row
     except Exception:
         return None
 

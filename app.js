@@ -48,7 +48,9 @@ const I18N = {
     newsNoneRelevant:
       "No recent relevant financial news found for this ticker.",
     aiSentimentTitle: "FinSense Unified Signal",
-    fusionConfirm: "Recalculate analysis with Sentiment (AI) {s}% and Technical {t}%?",
+    fusionApplyBtn: "Apply",
+    fusionApplying: "Analyzing…",
+    fusionReanalyzing: "Re-analyzing with new weights…",
     aiConfidence: "Synthesis Score",
     aiAnalyzing: "AI is analyzing the news...",
     aiUnavailable: "AI analysis is currently unavailable.",
@@ -76,6 +78,10 @@ const I18N = {
     radarNoData: "No data",
     radarError: "Error",
     screenerNoIndicator: "Select at least one indicator.",
+    screenerIndicatorsLabel: "Indicators",
+    screenerSelectAll: "Select all",
+    screenerClearAll: "Clear",
+    screenerSelectedCount: "{n} of {t} selected",
     indicatorStoch: "Stochastic",
     scanMarketBtn: "Scan Market",
     oversoldScore: "Opportunity Signal",
@@ -139,7 +145,9 @@ const I18N = {
     newsNoneRelevant:
       "Bu sembol i\u00e7in ilgili finansal haber bulunamad\u0131.",
     aiSentimentTitle: "FinSense Birlesik Sinyal",
-    fusionConfirm: "Analiz Sentiment (AI) %{s} ve Teknik %{t} ile yeniden hesaplansin mi?",
+    fusionApplyBtn: "Onayla",
+    fusionApplying: "Analiz ediliyor…",
+    fusionReanalyzing: "Yeni oranlarla tekrar analiz ediliyor…",
     aiConfidence: "Sentez Skoru",
     aiAnalyzing: "AI haberleri analiz ediyor...",
     aiUnavailable: "AI analizi \u015fu anda kullan\u0131lam\u0131yor.",
@@ -167,6 +175,10 @@ const I18N = {
     radarNoData: "Veri yok",
     radarError: "Hata",
     screenerNoIndicator: "En az bir g\u00f6sterge se\u00e7in.",
+    screenerIndicatorsLabel: "G\u00f6stergeler",
+    screenerSelectAll: "T\u00fcm\u00fcn\u00fc se\u00e7",
+    screenerClearAll: "Temizle",
+    screenerSelectedCount: "{t} g\u00f6stergeden {n} se\u00e7ili",
     indicatorStoch: "Stokastik",
     scanMarketBtn: "Piyasay\u0131 Tara",
     oversoldScore: "Firsat Sinyali",
@@ -224,6 +236,8 @@ function applyLanguage() {
   });
   langToggle.textContent = currentLang === "en" ? "TR" : "EN";
   updateChartPeriodSubtitle();
+  refreshScreenerIndicatorLabels();
+  updateScreenerIndicatorCount();
 }
 
 // ---------------------------------------------------------------------------
@@ -258,6 +272,9 @@ const technicalMomentumValue = document.getElementById("technicalMomentumValue")
 const radarStatus = document.getElementById("radarStatus");
 const screenerMarketSelector = document.getElementById("screenerMarketSelector");
 const screenerIndicatorSelector = document.getElementById("screenerIndicatorSelector");
+const screenerIndicatorCount = document.getElementById("screenerIndicatorCount");
+const screenerSelectAllBtn = document.getElementById("screenerSelectAllBtn");
+const screenerClearAllBtn = document.getElementById("screenerClearAllBtn");
 const screenerScanBtn = document.getElementById("screenerScanBtn");
 const screenerResults = document.getElementById("screenerResults");
 
@@ -275,12 +292,32 @@ let lastFusionContext = null;
 
 const fusionSlider = document.getElementById("fusionSlider");
 const fusionSliderWrap = document.getElementById("fusionSliderWrap");
+const fusionApplyBtn = document.getElementById("fusionApplyBtn");
 const sentimentLabel = document.getElementById("sentimentLabel");
 const technicalLabel = document.getElementById("technicalLabel");
 let lastFusionSliderValue = fusionSlider ? Number(fusionSlider.value) : 60;
 
 const CHART_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><polyline points="7 14 11 10 14 13 20 7"/></svg>';
+
+const SCREENER_INDICATOR_CATALOG = [
+  { id: "rsi", en: "RSI (14)", tr: "RSI (14)", descEn: "Momentum — oversold below 30, overbought above 70", descTr: "Momentum — 30 altı aşırı satış, 70 üstü aşırı alım", defaultOn: true },
+  { id: "macd", en: "MACD Line", tr: "MACD Çizgisi", descEn: "Trend momentum via moving-average convergence", descTr: "Hareketli ortalama yakınsaması ile trend momentumu", defaultOn: true },
+  { id: "macd_hist", en: "MACD Histogram", tr: "MACD Histogram", descEn: "MACD minus signal — bullish when positive", descTr: "MACD eksi sinyal — pozitifken yükseliş", defaultOn: false },
+  { id: "stoch_k", en: "Stochastic %K", tr: "Stokastik %K", descEn: "Fast stochastic oscillator (14,3)", descTr: "Hızlı stokastik osilatör (14,3)", defaultOn: true },
+  { id: "stoch_d", en: "Stochastic %D", tr: "Stokastik %D", descEn: "Smoothed stochastic signal line", descTr: "Yumuşatılmış stokastik sinyal çizgisi", defaultOn: false },
+  { id: "mfi", en: "MFI (14)", tr: "MFI (14)", descEn: "Money Flow Index — volume-weighted RSI", descTr: "Para Akış Endeksi — hacim ağırlıklı RSI", defaultOn: true },
+  { id: "cci", en: "CCI (20)", tr: "CCI (20)", descEn: "Commodity Channel Index — mean reversion", descTr: "Emtia Kanal Endeksi — ortalamaya dönüş", defaultOn: false },
+  { id: "williams_r", en: "Williams %R", tr: "Williams %R", descEn: "Overbought/oversold momentum (-100 to 0)", descTr: "Aşırı alım/satım momentumu (-100 ile 0)", defaultOn: false },
+  { id: "bb_pct_b", en: "Bollinger %B", tr: "Bollinger %B", descEn: "Price position inside Bollinger Bands", descTr: "Fiyatın Bollinger bantları içindeki konumu", defaultOn: false },
+  { id: "adx", en: "ADX (14)", tr: "ADX (14)", descEn: "Trend strength — higher means stronger trend", descTr: "Trend gücü — yüksek değer güçlü trend", defaultOn: false },
+  { id: "roc", en: "ROC (12)", tr: "ROC (12)", descEn: "Rate of Change — price momentum %", descTr: "Değişim Oranı — fiyat momentumu %", defaultOn: false },
+  { id: "atr_pct", en: "ATR %", tr: "ATR %", descEn: "Average True Range as % of price (volatility)", descTr: "Ortalama gerçek aralık, fiyatın %'si (volatilite)", defaultOn: false },
+  { id: "ema20_dist", en: "Distance from EMA 20", tr: "EMA 20 uzaklığı", descEn: "% distance below/above 20-day EMA", descTr: "20 günlük EMA'dan % uzaklık", defaultOn: false },
+  { id: "ema50_dist", en: "Distance from EMA 50", tr: "EMA 50 uzaklığı", descEn: "% distance below/above 50-day EMA", descTr: "50 günlük EMA'dan % uzaklık", defaultOn: false },
+];
+
+const SCREENER_INDICATORS_LS = "sf_screener_indicators";
 
 // ---------------------------------------------------------------------------
 // Theme
@@ -1028,6 +1065,33 @@ function updateFusionLabels() {
   technicalLabel.textContent = `Technical (Math): ${weights.technicalPct}%`;
 }
 
+function updateFusionApplyButton() {
+  if (!fusionApplyBtn || !fusionSlider) return;
+  const pending =
+    !!lastFusionContext && Number(fusionSlider.value) !== lastFusionSliderValue;
+  fusionApplyBtn.classList.toggle("hidden", !pending);
+  if (!pending && !fusionApplyBtn.disabled) {
+    fusionApplyBtn.textContent = t("fusionApplyBtn");
+  }
+}
+
+function setFusionReanalyzing() {
+  aiSentimentCard.classList.add("loading");
+  aiSentimentText.textContent = t("fusionReanalyzing");
+  if (fusionApplyBtn) {
+    fusionApplyBtn.disabled = true;
+    fusionApplyBtn.classList.remove("hidden");
+    fusionApplyBtn.textContent = t("fusionApplying");
+  }
+}
+
+function resetFusionApplyButton() {
+  if (!fusionApplyBtn) return;
+  fusionApplyBtn.disabled = false;
+  fusionApplyBtn.textContent = t("fusionApplyBtn");
+  updateFusionApplyButton();
+}
+
 function applyFusionSynthesis() {
   if (!lastFusionContext) return;
   const { nlpScore, technicalScore, nlpLabel, technicalLabelText, analysis } = lastFusionContext;
@@ -1126,6 +1190,7 @@ async function loadAiSentiment(ticker, headlines, opts = {}) {
   lastFusionSliderValue = getFusionWeights().sentimentPct;
   setFusionSliderVisible(true);
   updateFusionLabels();
+  resetFusionApplyButton();
   aiSentimentCard.classList.remove("loading");
   applyConfidenceVisuals(synthesis.className.toUpperCase(), Math.round(Math.abs(Number(synthesis.scoreText))));
   aiSentimentBadge.textContent = synthesis.label;
@@ -1197,7 +1262,98 @@ function setScreenerMarket(market) {
   });
 }
 
+function getScreenerIndicatorMeta(id) {
+  const item = SCREENER_INDICATOR_CATALOG.find((x) => x.id === id);
+  if (!item) return { name: id, desc: "" };
+  const tr = currentLang === "tr";
+  return {
+    name: tr ? item.tr : item.en,
+    desc: tr ? item.descTr : item.descEn,
+  };
+}
+
+function getDefaultScreenerIndicatorIds() {
+  return SCREENER_INDICATOR_CATALOG.filter((i) => i.defaultOn).map((i) => i.id);
+}
+
+function loadSavedScreenerIndicators() {
+  try {
+    const raw = localStorage.getItem(SCREENER_INDICATORS_LS);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (Array.isArray(parsed) && parsed.length) {
+      return parsed.filter((id) => SCREENER_INDICATOR_CATALOG.some((i) => i.id === id));
+    }
+  } catch {
+    /* ignore */
+  }
+  return getDefaultScreenerIndicatorIds();
+}
+
+function saveScreenerIndicators() {
+  localStorage.setItem(SCREENER_INDICATORS_LS, JSON.stringify(getSelectedIndicators()));
+}
+
+function updateScreenerIndicatorCount() {
+  if (!screenerIndicatorCount) return;
+  const n = getSelectedIndicators().length;
+  const total = SCREENER_INDICATOR_CATALOG.length;
+  screenerIndicatorCount.textContent = t("screenerSelectedCount")
+    .replace("{n}", String(n))
+    .replace("{t}", String(total));
+}
+
+function refreshScreenerIndicatorLabels() {
+  if (!screenerIndicatorSelector) return;
+  screenerIndicatorSelector.querySelectorAll(".screener-indicator-option").forEach((label) => {
+    const input = label.querySelector('input[type="checkbox"]');
+    if (!input) return;
+    const meta = getScreenerIndicatorMeta(input.value);
+    const strong = label.querySelector("strong");
+    const small = label.querySelector("small");
+    if (strong) strong.textContent = meta.name;
+    if (small) small.textContent = meta.desc;
+  });
+}
+
+function buildScreenerIndicatorList() {
+  if (!screenerIndicatorSelector) return;
+  const saved = new Set(loadSavedScreenerIndicators());
+  screenerIndicatorSelector.innerHTML = "";
+
+  SCREENER_INDICATOR_CATALOG.forEach((item) => {
+    const meta = getScreenerIndicatorMeta(item.id);
+    const label = document.createElement("label");
+    label.className = "screener-indicator-option";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = item.id;
+    input.checked = saved.has(item.id);
+
+    const text = document.createElement("span");
+    text.className = "screener-indicator-option-text";
+    text.innerHTML = `<strong></strong><small></small>`;
+    text.querySelector("strong").textContent = meta.name;
+    text.querySelector("small").textContent = meta.desc;
+
+    input.addEventListener("change", () => {
+      updateScreenerIndicatorCount();
+      saveScreenerIndicators();
+    });
+
+    label.appendChild(input);
+    label.appendChild(text);
+    screenerIndicatorSelector.appendChild(label);
+  });
+
+  updateScreenerIndicatorCount();
+}
+
+function getIndicatorLabel(indicatorId) {
+  return getScreenerIndicatorMeta(indicatorId).name;
+}
+
 function getSelectedIndicators() {
+  if (!screenerIndicatorSelector) return [];
   const checks = screenerIndicatorSelector.querySelectorAll('input[type="checkbox"]');
   return [...checks].filter((c) => c.checked).map((c) => c.value);
 }
@@ -1205,7 +1361,10 @@ function getSelectedIndicators() {
 function formatIndicatorValue(indicator, value) {
   const num = Number(value);
   if (!Number.isFinite(num)) return "-";
-  if (indicator === "macd") return num.toFixed(4);
+  if (indicator === "macd" || indicator === "macd_hist") return num.toFixed(4);
+  if (indicator === "roc" || indicator === "ema20_dist" || indicator === "ema50_dist" || indicator === "atr_pct") {
+    return `${num.toFixed(2)}%`;
+  }
   return num.toFixed(2);
 }
 
@@ -1214,21 +1373,54 @@ function indicatorInterpretation(indicator, rawValue) {
   if (!Number.isFinite(value)) {
     return { label: t("indicatorBalanced"), className: "neutral" };
   }
+
   if (indicator === "rsi") {
     if (value < 30) return { label: t("indicatorOversold"), className: "bullish" };
     if (value > 70) return { label: t("indicatorOverbought"), className: "bearish" };
     return { label: t("indicatorBalanced"), className: "neutral" };
   }
-  if (indicator === "macd") {
-    if (value < 0) return { label: t("indicatorBearish"), className: "bearish" };
-    if (value > 0) return { label: t("indicatorBullish"), className: "bullish" };
-    return { label: t("indicatorBalanced"), className: "neutral" };
-  }
-  if (indicator === "stoch_k" || indicator === "mfi") {
+
+  if (indicator === "stoch_k" || indicator === "stoch_d" || indicator === "mfi") {
     if (value < 20) return { label: t("indicatorOversold"), className: "bullish" };
     if (value > 80) return { label: t("indicatorOverbought"), className: "bearish" };
     return { label: t("indicatorBalanced"), className: "neutral" };
   }
+
+  if (indicator === "williams_r") {
+    if (value < -80) return { label: t("indicatorOversold"), className: "bullish" };
+    if (value > -20) return { label: t("indicatorOverbought"), className: "bearish" };
+    return { label: t("indicatorBalanced"), className: "neutral" };
+  }
+
+  if (indicator === "cci") {
+    if (value < -100) return { label: t("indicatorOversold"), className: "bullish" };
+    if (value > 100) return { label: t("indicatorOverbought"), className: "bearish" };
+    return { label: t("indicatorBalanced"), className: "neutral" };
+  }
+
+  if (indicator === "bb_pct_b") {
+    if (value < 20) return { label: t("indicatorOversold"), className: "bullish" };
+    if (value > 80) return { label: t("indicatorOverbought"), className: "bearish" };
+    return { label: t("indicatorBalanced"), className: "neutral" };
+  }
+
+  if (indicator === "macd" || indicator === "macd_hist") {
+    if (value < 0) return { label: t("indicatorBearish"), className: "bearish" };
+    if (value > 0) return { label: t("indicatorBullish"), className: "bullish" };
+    return { label: t("indicatorBalanced"), className: "neutral" };
+  }
+
+  if (indicator === "roc" || indicator === "ema20_dist" || indicator === "ema50_dist") {
+    if (value < -2) return { label: t("indicatorBearish"), className: "bearish" };
+    if (value > 2) return { label: t("indicatorBullish"), className: "bullish" };
+    return { label: t("indicatorBalanced"), className: "neutral" };
+  }
+
+  if (indicator === "adx") {
+    if (value >= 25) return { label: t("indicatorBullish"), className: "bullish" };
+    return { label: t("indicatorBalanced"), className: "neutral" };
+  }
+
   return { label: t("indicatorBalanced"), className: "neutral" };
 }
 
@@ -1282,7 +1474,7 @@ function renderScreenerResults(items, indicators) {
     el.style.animationDelay = `${i * 0.05}s`;
     const metrics = indicators
       .map((ind) => {
-        const label = ind === "stoch_k" ? t("indicatorStoch") : ind.toUpperCase();
+        const label = getIndicatorLabel(ind);
         const val = formatIndicatorValue(ind, item[ind]);
         const meaning = indicatorInterpretation(ind, item[ind]);
         return `<span class="screener-metric"><b>${label}</b> ${val}<span class="metric-badge ${meaning.className}">${meaning.label}</span></span>`;
@@ -1334,6 +1526,28 @@ screenerMarketSelector.addEventListener("click", (e) => {
 
 screenerScanBtn.addEventListener("click", runScreenerScan);
 
+if (screenerSelectAllBtn) {
+  screenerSelectAllBtn.addEventListener("click", () => {
+    screenerIndicatorSelector.querySelectorAll('input[type="checkbox"]').forEach((c) => {
+      c.checked = true;
+    });
+    updateScreenerIndicatorCount();
+    saveScreenerIndicators();
+  });
+}
+
+if (screenerClearAllBtn) {
+  screenerClearAllBtn.addEventListener("click", () => {
+    screenerIndicatorSelector.querySelectorAll('input[type="checkbox"]').forEach((c) => {
+      c.checked = false;
+    });
+    updateScreenerIndicatorCount();
+    saveScreenerIndicators();
+  });
+}
+
+buildScreenerIndicatorList();
+
 async function loadScreener() {
   radarStatus.textContent = t("radarScanning");
   screenerResults.innerHTML = '<span class="radar-loading">&nbsp;</span>';
@@ -1351,35 +1565,37 @@ async function loadScreener() {
 // --- FUSION MODEL SLIDER LOGIC ---
 updateFusionLabels();
 setFusionSliderVisible(false);
+updateFusionApplyButton();
 
-async function handleFusionSliderChange() {
+async function applyFusionWeights() {
   if (!fusionSlider || !lastFusionContext) return;
 
   const newVal = Number(fusionSlider.value);
   if (newVal === lastFusionSliderValue) return;
 
-  const weights = getFusionWeights();
-  const msg = t("fusionConfirm")
-    .replace("{s}", String(weights.sentimentPct))
-    .replace("{t}", String(weights.technicalPct));
-
-  if (!window.confirm(msg)) {
-    fusionSlider.value = String(lastFusionSliderValue);
-    updateFusionLabels();
-    return;
+  setFusionReanalyzing();
+  try {
+    await loadAiSentiment(
+      lastFusionContext.ticker,
+      lastFusionContext.headlines || [],
+      { newsStatus: lastFusionContext.newsStatus || "ok" },
+    );
+  } catch {
+    aiSentimentCard.classList.remove("loading");
+    aiSentimentText.textContent = t("aiUnavailable");
+    resetFusionApplyButton();
   }
-
-  lastFusionSliderValue = newVal;
-  await loadAiSentiment(
-    lastFusionContext.ticker,
-    lastFusionContext.headlines || [],
-    { newsStatus: lastFusionContext.newsStatus || "ok" },
-  );
 }
 
 if (fusionSlider) {
-  fusionSlider.addEventListener("input", updateFusionLabels);
-  fusionSlider.addEventListener("change", () => {
-    void handleFusionSliderChange();
+  fusionSlider.addEventListener("input", () => {
+    updateFusionLabels();
+    updateFusionApplyButton();
+  });
+}
+
+if (fusionApplyBtn) {
+  fusionApplyBtn.addEventListener("click", () => {
+    void applyFusionWeights();
   });
 }
