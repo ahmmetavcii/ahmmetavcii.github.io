@@ -327,7 +327,23 @@ input,
   min-height: 100vh;
   min-height: 100dvh;
   height: 100dvh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.site-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  flex-shrink: 0;
+  background: var(--bg);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+}
+
+body.light-mode .site-sticky-header {
+  background: var(--bg);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
 }
 
 body.light-mode .topbar {
@@ -462,9 +478,9 @@ body.light-mode .suggestion-exchange-badge.sug-crypto {
 .main-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  flex: 1;
+  flex: 1 0 auto;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* ---- Master search ---- */
@@ -1156,8 +1172,7 @@ body.light-mode .card.active {
   width: 100%;
   background: transparent;
   overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-y: visible;
   transition: background var(--transition);
 }
 

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=24" />
+    <link rel="stylesheet" href="/styles.css?v=25" />
   </head>
   <body class="splash-active">
 
@@ -26,7 +26,8 @@
     <!-- ============ App shell ============ -->
     <div id="appShell" class="shell">
 
-      <!-- Top bar -->
+      <!-- Sticky header: logo + search -->
+      <div class="site-sticky-header">
       <header class="topbar">
         <div class="topbar-brand-wrap">
           <span class="topbar-brand">
@@ -58,6 +59,7 @@
           <div id="searchSuggestions" class="suggestions-dropdown hidden"></div>
         </div>
         <button id="scanBtn" class="btn-master-analyze" type="button" data-i18n="analyzeBtn">Analyze</button>
+      </div>
       </div>
 
       <div class="platform-strip" aria-label="Platform highlights">
