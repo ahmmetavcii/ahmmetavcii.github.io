@@ -1933,7 +1933,7 @@ function renderScreenerResults(items, indicators) {
         const label = shortIndicatorLabel(ind);
         const val = formatIndicatorValue(ind, item[ind]);
         const meaning = indicatorInterpretation(ind, item[ind]);
-        return `<span class="screener-metric" title="${getIndicatorLabel(ind)} ${val} — ${meaning.label}"><b>${label}</b> ${val}<span class="metric-badge ${meaning.className}">${meaning.label}</span></span>`;
+        return `<span class="screener-metric" title="${getIndicatorLabel(ind)} ${val} — ${meaning.label}"><span class="screener-metric-main"><b>${label}</b> ${val}</span><span class="metric-badge ${meaning.className}">${meaning.label}</span></span>`;
       })
       .join("");
     const moreMetrics =
