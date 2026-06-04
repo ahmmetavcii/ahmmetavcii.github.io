@@ -1,0 +1,33 @@
+---
+description: Her görev sonrası değişiklikleri otomatik GitHub'a yükle
+alwaysApply: true
+---
+
+# Otomatik GitHub yükleme
+
+Bu projede kod veya içerik değişikliği içeren her görev tamamlandığında, kullanıcı ayrıca istemeden **commit + push** yap.
+
+## Ne zaman yap
+
+- UI, backend, stil, config vb. anlamlı değişiklikler bittikten sonra
+- Kullanıcı sadece soru/review istemediyse ve dosya değişikliği varsa
+- Push'tan önce kısa özet ver; commit hash ve repo URL'sini bildir
+
+## Ne zaman yapma
+
+- Sadece soru, açıklama veya inceleme (dosya değişmedi)
+- Kullanıcı açıkça "push etme" / "commit etme" dediyse
+- Commit edilecek değişiklik yoksa (boş commit yok)
+- `.env`, `users.db`, `__pycache__/` gibi gizli/üretilmiş dosyaları **asla** commit etme
+
+## Git akışı
+
+1. `git status` ve `git diff` ile değişiklikleri kontrol et
+2. Uygun dosyaları stage et
+3. Türkçe veya projedeki mevcut stile uygun kısa commit mesajı yaz (neden odaklı)
+4. `git push origin main` (veya aktif branch)
+5. Başarısız push/hook durumunda düzelt ve yeni commit dene; `--amend` kurallarına uy
+
+## Not
+
+Kullanıcı "yükle githuba" demese bile bu kural geçerlidir; iş bitince otomatik yükle.
