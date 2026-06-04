@@ -1302,12 +1302,12 @@ body.light-mode .chart-header {
 
 .chart-featured--empty {
   margin: 16px 0 0;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
 }
 
 .chart-featured--empty .chart-featured-group {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .chart-empty-state {
@@ -2477,6 +2477,73 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
 
 /* ===== Desktop (821px+) refinements ===== */
 @media (min-width: 821px) {
+  .platform-strip,
+  .empty-quick-picks,
+  .chart-area,
+  .chart-featured,
+  .news-section,
+  .radar-section,
+  .chart-sparklines {
+    width: calc(100% - 40px);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .platform-strip {
+    margin-bottom: 14px;
+  }
+
+  .chart-area {
+    margin-top: 16px;
+    margin-bottom: 10px;
+  }
+
+  .chart-featured {
+    margin-bottom: 4px;
+  }
+
+  .news-section {
+    margin-top: 6px;
+    margin-bottom: 14px;
+  }
+
+  .radar-section {
+    margin-bottom: 20px;
+  }
+
+  .empty-quick-picks {
+    margin-top: 16px;
+    margin-bottom: 14px;
+    padding: 28px 28px 22px;
+  }
+
+  .empty-quick-picks .chart-empty-state {
+    max-width: 760px;
+    margin-inline: auto;
+  }
+
+  .empty-quick-picks .chart-empty-visual {
+    height: 96px;
+    width: min(100%, 360px);
+  }
+
+  .empty-quick-picks .platform-features {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 100%;
+  }
+
+  .empty-quick-picks .chart-featured--empty,
+  .empty-quick-picks .chart-featured--empty .chart-featured-group {
+    justify-content: flex-start;
+  }
+
+  .empty-quick-picks .chart-featured-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
   .chart-header {
     flex-direction: row;
     align-items: flex-start;
@@ -2493,14 +2560,11 @@ body.light-mode ::-webkit-scrollbar-thumb:hover {
     justify-content: flex-end;
   }
 
-  .empty-quick-picks .platform-features {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .empty-quick-picks .chart-featured-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .screener-indicator-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    max-height: 280px;
   }
 
   .screener-results {
