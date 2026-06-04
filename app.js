@@ -463,7 +463,7 @@ function initSplashScreen() {
 
 function showChartEmptyState() {
   if (!chartPlaceholder) return;
-  chartPlaceholder.style.display = "block";
+  chartPlaceholder.style.display = "";
   chartPlaceholder.classList.remove("error");
   if (chartAreaEl) chartAreaEl.classList.add("is-empty");
   if (chartEmptyState) chartEmptyState.classList.remove("hidden");
