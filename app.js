@@ -886,12 +886,15 @@ function refreshSparklineColors() {
   });
 }
 
-function formatSparklinePrice(ticker, value) {
+function formatTickerPrice(ticker, value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  const digits = ticker.endsWith(".IS") ? 2 : n >= 1000 ? 2 : n >= 1 ? 2 : 4;
-  const prefix = ticker.endsWith(".IS") ? "₺" : "$";
-  return `${prefix}${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+  const sym = String(ticker || "").toUpperCase();
+  if (sym.endsWith(".IS")) {
+    return `₺${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  const digits = n >= 1000 ? 2 : n >= 1 ? 2 : 4;
+  return `$${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 }
 
 async function loadSparklinePreviews() {
@@ -940,7 +943,7 @@ async function loadSparklinePreviews() {
         );
         const prices = Array.isArray(data.prices) ? data.prices : [];
         const last = prices.length ? prices[prices.length - 1] : null;
-        if (priceEl) priceEl.textContent = formatSparklinePrice(ticker, last);
+        if (priceEl) priceEl.textContent = formatTickerPrice(ticker, last);
 
         const ctx = canvas.getContext("2d");
         const ch = new Chart(ctx, {
@@ -1195,8 +1198,7 @@ async function loadChart(ticker, options = {}) {
               label: (tip) => {
                 const v = tip.parsed.y;
                 if (v == null) return null;
-                const fmt = `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
-                return ` ${tip.dataset.label}: ${fmt}`;
+                return ` ${tip.dataset.label}: ${formatTickerPrice(ticker, v)}`;
               },
             },
           },
@@ -1211,7 +1213,7 @@ async function loadChart(ticker, options = {}) {
             ticks: {
               color: c.tick,
               font: { family: "Inter", size: 11 },
-              callback: (v) => "$" + v.toLocaleString(),
+              callback: (v) => formatTickerPrice(ticker, v),
             },
             grid: { color: c.grid },
             border: { color: "transparent" },
